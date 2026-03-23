@@ -33,7 +33,6 @@ function parseCsv(file: File): Promise<ParseResult> {
     Papa.parse<CsvRawRow>(file, {
       header:         true,
       skipEmptyLines: true,
-      trimHeaders:    true,
       transform:      (val: string) => val.trim(),
       complete: result => {
         if (result.errors.length && result.data.length === 0) {
