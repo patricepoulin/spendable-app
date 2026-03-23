@@ -1,0 +1,3 @@
+# Spendable app — behind authentication, no public content to index
+User-agent: *
+Disallow: /
