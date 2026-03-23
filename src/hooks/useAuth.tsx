@@ -20,7 +20,7 @@ interface AuthContextType {
   loading: boolean;
   isMockMode: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<{ identities?: unknown[] | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error, data } = await auth.signUp(email, password) as { error: Error | null; data: { user?: { id: string } | null } };
+    const { error, data } = await auth.signUp(email, password) as { error: Error | null; data: { user?: { id: string; identities?: unknown[] | null } | null } };
     if (error) throw error;
     if (IS_MOCK) {
       sessionStorage.setItem('spendable_mock_logged_in', 'true');
@@ -81,6 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // checks and webhook upserts have a row to work with from day one.
       await subscriptionApi.upsertFree(data.user.id).catch(() => {});
     }
+    // Return identities so AuthPage can detect duplicate confirmed accounts.
+    // Supabase returns an empty identities array when the email is already registered.
+    return { identities: data?.user?.identities };
   };
 
   const signOut = async () => {

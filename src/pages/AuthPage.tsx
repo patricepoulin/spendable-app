@@ -71,9 +71,16 @@ export function AuthPage() {
     try {
       if (type === 'signin') await signIn(email, password);
       else {
-        await signUp(email, password);
-        setSuccess('Check your email to confirm your account!');
-        setShowResend(true);
+        const result = await signUp(email, password);
+        // Supabase returns an empty identities array when the email already
+        // belongs to a confirmed account — show a clear message instead of
+        // the misleading "Check your email" success copy.
+        if (result.identities !== undefined && result.identities !== null && result.identities.length === 0) {
+          setError('An account with this email already exists. Please sign in instead.');
+        } else {
+          setSuccess('Check your email to confirm your account!');
+          setShowResend(true);
+        }
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
