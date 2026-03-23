@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
-  Box, VStack, HStack, Text, Input, Button,
+  Box, VStack, HStack, Text, Input, Button, Icon,
   FormControl, FormLabel, Alert, AlertIcon,
   Tabs, TabList, Tab, TabPanels, TabPanel,
-  Link,
+  Link, InputGroup, InputRightElement, IconButton,
 } from '@chakra-ui/react';
+import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
 import { useAuth } from '../hooks/useAuth';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { supabase } from '../lib/supabase';
@@ -33,6 +34,9 @@ export function AuthPage() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword]           = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword]     = useState(false);
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const [success, setSuccess]         = useState('');
@@ -72,7 +76,14 @@ export function AuthPage() {
         setShowResend(true);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Authentication failed');
+      const msg = e instanceof Error ? e.message : '';
+      if (type === 'signup' && (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('user already exists'))) {
+        setError('An account with this email already exists. Try signing in instead.');
+      } else if (type === 'signin' && (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('credentials'))) {
+        setError('Incorrect email or password. Please try again.');
+      } else {
+        setError(msg || 'Authentication failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -159,11 +170,19 @@ export function AuthPage() {
               {!success && (
                 <FormControl>
                   <FormLabel fontSize="12px" fontWeight="600" color={colors.muted} mb={1.5}>New password</FormLabel>
-                  <Input type="password" placeholder="8+ characters" value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                    borderRadius="8px" h="42px" fontSize="14px" borderColor={colors.border}
-                    _hover={{ borderColor: colors.brand }} bg={colors.surface}
-                    onKeyDown={e => e.key === 'Enter' && handleSetNewPassword()} />
+                  <InputGroup>
+                    <Input type={showNewPassword ? 'text' : 'password'} placeholder="8+ characters" value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      borderRadius="8px" h="42px" fontSize="14px" borderColor={colors.border}
+                      _hover={{ borderColor: colors.brand }} bg={colors.surface}
+                      onKeyDown={e => e.key === 'Enter' && handleSetNewPassword()} />
+                    <InputRightElement h="42px">
+                      <IconButton aria-label={showNewPassword ? 'Hide' : 'Show'}
+                        icon={<Icon as={showNewPassword ? RiEyeOffLine : RiEyeLine} boxSize="16px" />}
+                        size="sm" variant="ghost" color={colors.muted} _hover={{ color: colors.brand, bg: 'transparent' }}
+                        onClick={() => setShowNewPassword(v => !v)} />
+                    </InputRightElement>
+                  </InputGroup>
                 </FormControl>
               )}
               {!success && (
@@ -227,11 +246,19 @@ export function AuthPage() {
                         Forgot password?
                       </Link>
                     </HStack>
-                    <Input type="password" placeholder="••••••••" value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      borderRadius="8px" h="42px" fontSize="14px" borderColor={colors.border}
-                      _hover={{ borderColor: colors.brand }} bg={colors.surface}
-                      onKeyDown={e => e.key === 'Enter' && handle('signin')} />
+                    <InputGroup>
+                      <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        borderRadius="8px" h="42px" fontSize="14px" borderColor={colors.border}
+                        _hover={{ borderColor: colors.brand }} bg={colors.surface}
+                        onKeyDown={e => e.key === 'Enter' && handle('signin')} />
+                      <InputRightElement h="42px">
+                        <IconButton aria-label={showPassword ? 'Hide' : 'Show'}
+                          icon={<Icon as={showPassword ? RiEyeOffLine : RiEyeLine} boxSize="16px" />}
+                          size="sm" variant="ghost" color={colors.muted} _hover={{ color: colors.brand, bg: 'transparent' }}
+                          onClick={() => setShowPassword(v => !v)} />
+                      </InputRightElement>
+                    </InputGroup>
                   </FormControl>
                   <Button w="full" h="42px" borderRadius="8px" bg={colors.brand} color="white"
                     fontWeight="600" fontSize="14px" _hover={{ bg: colors.brandHover }}
@@ -266,18 +293,34 @@ export function AuthPage() {
                   </FormControl>
                   <FormControl>
                     <FormLabel fontSize="12px" fontWeight="600" color={colors.muted} mb={1.5}>Password</FormLabel>
-                    <Input type="password" placeholder="8+ characters" value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      borderRadius="8px" h="42px" fontSize="14px" borderColor={colors.border}
-                      _hover={{ borderColor: colors.brand }} bg={colors.surface} />
+                    <InputGroup>
+                      <Input type={showPassword ? 'text' : 'password'} placeholder="8+ characters" value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        borderRadius="8px" h="42px" fontSize="14px" borderColor={colors.border}
+                        _hover={{ borderColor: colors.brand }} bg={colors.surface} />
+                      <InputRightElement h="42px">
+                        <IconButton aria-label={showPassword ? 'Hide' : 'Show'}
+                          icon={<Icon as={showPassword ? RiEyeOffLine : RiEyeLine} boxSize="16px" />}
+                          size="sm" variant="ghost" color={colors.muted} _hover={{ color: colors.brand, bg: 'transparent' }}
+                          onClick={() => setShowPassword(v => !v)} />
+                      </InputRightElement>
+                    </InputGroup>
                   </FormControl>
                   <FormControl>
                     <FormLabel fontSize="12px" fontWeight="600" color={colors.muted} mb={1.5}>Confirm Password</FormLabel>
-                    <Input type="password" placeholder="Re-enter your password" value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                      borderRadius="8px" h="42px" fontSize="14px" borderColor={colors.border}
-                      _hover={{ borderColor: colors.brand }} bg={colors.surface}
-                      onKeyDown={e => e.key === 'Enter' && handle('signup')} />
+                    <InputGroup>
+                      <Input type={showConfirmPassword ? 'text' : 'password'} placeholder="Re-enter your password" value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        borderRadius="8px" h="42px" fontSize="14px" borderColor={colors.border}
+                        _hover={{ borderColor: colors.brand }} bg={colors.surface}
+                        onKeyDown={e => e.key === 'Enter' && handle('signup')} />
+                      <InputRightElement h="42px">
+                        <IconButton aria-label={showConfirmPassword ? 'Hide' : 'Show'}
+                          icon={<Icon as={showConfirmPassword ? RiEyeOffLine : RiEyeLine} boxSize="16px" />}
+                          size="sm" variant="ghost" color={colors.muted} _hover={{ color: colors.brand, bg: 'transparent' }}
+                          onClick={() => setShowConfirmPassword(v => !v)} />
+                      </InputRightElement>
+                    </InputGroup>
                   </FormControl>
                   <Button w="full" h="42px" borderRadius="8px" bg={colors.brand} color="white"
                     fontWeight="600" fontSize="14px" _hover={{ bg: colors.brandHover }}
