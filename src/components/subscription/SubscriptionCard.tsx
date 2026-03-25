@@ -8,6 +8,7 @@ import {
 import { UpgradeModal } from './UpgradeModal';
 import { openCustomerPortal, PLANS, FREE_INCOME_LIMIT, FREE_EXPENSE_LIMIT, FREE_UPCOMING_LIMIT } from '../../services/stripe';
 import { useAuth } from '../../hooks/useAuth';
+import { usePrices, type CurrencyKey } from '../../hooks/usePrices';
 import { EXPORT_GRACE_DAYS } from '../../hooks/useSubscription';
 import { useState } from 'react';
 import type { UserSubscription } from '../../types';
@@ -33,6 +34,7 @@ export function SubscriptionCard({
   const toast     = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [portalLoading, setPortalLoading] = useState(false);
+  const { label: priceLabel } = usePrices();
 
   const surface = '#ffffff';
   const border  = '#e2e8f0';
@@ -283,9 +285,8 @@ export function SubscriptionCard({
                 <Text fontSize="11px" fontWeight="700" color="#4C5FD5"
                   textTransform="uppercase" letterSpacing="0.08em" mb={2.5}>
                   {(() => {
-                    const symbols: Record<string, string> = { GBP: '£', EUR: '€', CAD: 'C$', AUD: 'A$' };
-                    const sym = symbols[userCurrency?.toUpperCase() ?? ''] ?? '$';
-                    return `Unlock with Pro — from ${sym}9/mo`;
+                    const key = (userCurrency?.toLowerCase() ?? 'usd') as CurrencyKey;
+                    return `Unlock with Pro — from ${priceLabel(key)}`;
                   })()}
                 </Text>
                 <VStack spacing={1.5} align="stretch">

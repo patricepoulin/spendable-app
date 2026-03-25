@@ -3,6 +3,7 @@ import { Box, SimpleGrid, Text, Alert, AlertIcon, Skeleton, VStack, HStack, Butt
 import { RiLineChartLine, RiArrowRightLine, RiMoneyDollarCircleLine } from 'react-icons/ri';
 import { Link as RouterLink } from 'react-router-dom';
 import { useSubscription } from '../hooks/useSubscription';
+import { usePrices } from '../hooks/usePrices';
 import { UpgradeModal } from '../components/subscription/UpgradeModal';
 import { PageHeader } from '../components/ui/PageHeader';
 import { ForecastChart } from '../components/forecast/ForecastChart';
@@ -18,6 +19,7 @@ export function ForecastPage() {
   const { metrics, income, expenses, settings, loading, error } = useFinancials();
   const currency = settings?.currency ?? 'USD';
   const { isPro, loading: subLoading } = useSubscription();
+  const { label: priceLabel } = usePrices();
   const { isOpen: isUpgradeOpen, onOpen: onUpgradeOpen, onClose: onUpgradeClose } = useDisclosure();
 
   const forecast = metrics && settings
@@ -73,7 +75,7 @@ export function ForecastPage() {
               >
                 Unlock with Pro
               </Button>
-              <Text fontSize="12px" color="#8a9aaa" mt={4}>From $9/mo · Cancel anytime</Text>
+              <Text fontSize="12px" color="#8a9aaa" mt={4}>From {priceLabel('usd')} · Cancel anytime</Text>
             </Box>
           </Box>
           <UpgradeModal isOpen={isUpgradeOpen} onClose={onUpgradeClose} reason="forecast" userCurrency={currency} />

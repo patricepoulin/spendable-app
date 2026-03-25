@@ -9,3 +9,6 @@ verify_jwt = false
 
 [functions.delete-account]
 verify_jwt = false
+
+[functions.get-prices]
+verify_jwt = false

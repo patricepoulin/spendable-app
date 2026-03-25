@@ -1,13 +1,13 @@
 import {
   Modal, ModalOverlay, ModalContent, ModalBody, ModalCloseButton,
   Box, HStack, VStack, Text, Button, Icon, List, ListItem, ListIcon, useToast,
+  Skeleton,
 } from '@chakra-ui/react';
 import { RiCheckLine, RiFlashlightLine } from 'react-icons/ri';
 import { useAuth } from '../../hooks/useAuth';
 import { createCheckoutSession, PLANS, FREE_INCOME_LIMIT } from '../../services/stripe';
+import { usePrices, type CurrencyKey } from '../../hooks/usePrices';
 import { useState, useEffect } from 'react';
-
-type CurrencyKey = 'usd' | 'gbp' | 'eur' | 'cad' | 'aud';
 
 const VALID_KEYS: CurrencyKey[] = ['usd', 'gbp', 'eur', 'cad', 'aud'];
 
@@ -19,9 +19,7 @@ function toCurrencyKey(raw?: string): CurrencyKey {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  /** The trigger context — changes the message shown */
   reason?: 'income_limit' | 'csv_export' | 'forecast' | 'manual';
-  /** The user's currency setting (e.g. 'USD', 'GBP'). Pre-selects the matching tab. */
   userCurrency?: string;
 }
 
@@ -44,13 +42,17 @@ const REASON_COPY: Record<NonNullable<Props['reason']>, { title: string; body: s
   },
 };
 
+const CURRENCY_SYMBOLS: Record<CurrencyKey, string> = {
+  usd: '$', gbp: '£', eur: '€', cad: 'C$', aud: 'A$',
+};
+
 export function UpgradeModal({ isOpen, onClose, reason = 'manual', userCurrency }: Props) {
   const { user } = useAuth();
   const toast    = useToast();
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState<CurrencyKey>(() => toCurrencyKey(userCurrency));
+  const { loading: pricesLoading, label } = usePrices();
 
-  // Re-sync when modal opens in case the user changed currency between openings
   useEffect(() => {
     if (isOpen) setCurrency(toCurrencyKey(userCurrency));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -61,22 +63,15 @@ export function UpgradeModal({ isOpen, onClose, reason = 'manual', userCurrency 
   const muted   = '#5a6a7a';
   const copy    = REASON_COPY[reason];
 
-  const CURRENCY_OPTIONS = [
-    { key: 'usd' as const, label: '$ USD — $9/mo',   symbol: '$'  },
-    { key: 'gbp' as const, label: '£ GBP — £9/mo',   symbol: '£'  },
-    { key: 'eur' as const, label: '€ EUR — €9/mo',   symbol: '€'  },
-    { key: 'cad' as const, label: 'C$ CAD — C$9/mo', symbol: 'C$' },
-    { key: 'aud' as const, label: 'A$ AUD — A$9/mo', symbol: 'A$' },
+  const CURRENCY_OPTIONS: { key: CurrencyKey }[] = [
+    { key: 'usd' }, { key: 'gbp' }, { key: 'eur' }, { key: 'cad' }, { key: 'aud' },
   ];
-
-  const selectedOption = CURRENCY_OPTIONS.find(o => o.key === currency)!;
 
   const handleUpgrade = async () => {
     if (!user) return;
     setLoading(true);
     try {
       await createCheckoutSession(currency);
-      // Page will redirect — no need to setLoading(false)
     } catch (err) {
       toast({
         title: 'Could not start checkout',
@@ -87,53 +82,40 @@ export function UpgradeModal({ isOpen, onClose, reason = 'manual', userCurrency 
     }
   };
 
+  function currencyLabel(key: CurrencyKey): string {
+    const sym = CURRENCY_SYMBOLS[key];
+    return `${sym} ${key.toUpperCase()} — ${pricesLoading ? '…' : label(key)}`;
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md" isCentered>
       <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(6px)" />
       <ModalContent borderRadius="20px" border="1px solid" borderColor={border} shadow="2xl" bg={surface} overflow="hidden">
         <ModalCloseButton color={muted} />
 
-        {/* Header band */}
         <Box
           px={6} pt={8} pb={6}
           bgGradient="linear(135deg, #1C2B3A 0%, #253344 100%)"
           position="relative" overflow="hidden"
         >
-          {/* Glow */}
-          <Box
-            position="absolute" top="-40px" right="-40px"
-            w="180px" h="180px" borderRadius="full"
-            bg="radial-gradient(circle, rgba(76,95,213,0.35) 0%, transparent 70%)"
-            pointerEvents="none"
-          />
+          <Box position="absolute" top="-40px" right="-40px" w="180px" h="180px" borderRadius="full"
+            bg="radial-gradient(circle, rgba(76,95,213,0.35) 0%, transparent 70%)" pointerEvents="none" />
           <HStack spacing={3} mb={3}>
-            <Box
-              w={9} h={9} borderRadius="10px" bg="rgba(76,95,213,0.3)"
-              display="flex" alignItems="center" justifyContent="center"
-            >
+            <Box w={9} h={9} borderRadius="10px" bg="rgba(76,95,213,0.3)"
+              display="flex" alignItems="center" justifyContent="center">
               <Icon as={RiFlashlightLine} color="#7b8fec" boxSize="18px" />
             </Box>
-            <Box
-              px={2.5} py={0.5} borderRadius="full"
-              bg="rgba(76,95,213,0.25)" border="1px solid rgba(76,95,213,0.4)"
-            >
-              <Text fontSize="11px" fontWeight="700" color="#7b8fec" letterSpacing="0.5px">
-                PRO PLAN
-              </Text>
+            <Box px={2.5} py={0.5} borderRadius="full"
+              bg="rgba(76,95,213,0.25)" border="1px solid rgba(76,95,213,0.4)">
+              <Text fontSize="11px" fontWeight="700" color="#7b8fec" letterSpacing="0.5px">PRO PLAN</Text>
             </Box>
           </HStack>
-          <Text fontSize="18px" fontWeight="800" color="white" letterSpacing="-0.5px" mb={1}>
-            {copy.title}
-          </Text>
-          <Text fontSize="13px" color="#8FABBF" lineHeight="1.5">
-            {copy.body}
-          </Text>
+          <Text fontSize="18px" fontWeight="800" color="white" letterSpacing="-0.5px" mb={1}>{copy.title}</Text>
+          <Text fontSize="13px" color="#8FABBF" lineHeight="1.5">{copy.body}</Text>
         </Box>
 
         <ModalBody px={6} py={5}>
           <VStack spacing={5} align="stretch">
-
-            {/* Feature list */}
             <List spacing={2}>
               {PLANS.pro.features.map(f => (
                 <ListItem key={f} display="flex" alignItems="center">
@@ -143,56 +125,44 @@ export function UpgradeModal({ isOpen, onClose, reason = 'manual', userCurrency 
               ))}
             </List>
 
-            {/* Currency toggle — 3 top row, 2 bottom row */}
             <Box>
               <HStack spacing={2} mb={2}>
-                {CURRENCY_OPTIONS.slice(0, 3).map(({ key: c, label }) => (
-                  <Button
-                    key={c}
-                    size="sm" borderRadius="8px" flex={1}
-                    variant={currency === c ? 'solid' : 'outline'}
+                {CURRENCY_OPTIONS.slice(0, 3).map(({ key: c }) => (
+                  <Button key={c} size="sm" borderRadius="8px" flex={1}
                     bg={currency === c ? '#4C5FD5' : 'white'}
                     color={currency === c ? 'white' : '#5a6a7a'}
-                    borderColor="#E8E8E3"
-                    fontWeight="600" fontSize="12px"
+                    borderWidth="1px" borderColor="#E8E8E3"
+                    fontWeight="600" fontSize="11px"
                     _hover={{ bg: currency === c ? '#3D4FBF' : '#f8fafc' }}
-                    onClick={() => setCurrency(c)}
-                  >
-                    {label}
+                    onClick={() => setCurrency(c)}>
+                    {currencyLabel(c)}
                   </Button>
                 ))}
               </HStack>
               <HStack spacing={2}>
-                {CURRENCY_OPTIONS.slice(3).map(({ key: c, label }) => (
-                  <Button
-                    key={c}
-                    size="sm" borderRadius="8px" flex={1}
-                    variant={currency === c ? 'solid' : 'outline'}
+                {CURRENCY_OPTIONS.slice(3).map(({ key: c }) => (
+                  <Button key={c} size="sm" borderRadius="8px" flex={1}
                     bg={currency === c ? '#4C5FD5' : 'white'}
                     color={currency === c ? 'white' : '#5a6a7a'}
-                    borderColor="#E8E8E3"
-                    fontWeight="600" fontSize="12px"
+                    borderWidth="1px" borderColor="#E8E8E3"
+                    fontWeight="600" fontSize="11px"
                     _hover={{ bg: currency === c ? '#3D4FBF' : '#f8fafc' }}
-                    onClick={() => setCurrency(c)}
-                  >
-                    {label}
+                    onClick={() => setCurrency(c)}>
+                    {currencyLabel(c)}
                   </Button>
                 ))}
               </HStack>
             </Box>
 
-            {/* CTA */}
-            <Button
-              size="md" borderRadius="10px"
-              bg="#4C5FD5" color="white"
-              fontWeight="700" fontSize="14px"
-              _hover={{ bg: '#3D4FBF' }}
-              isLoading={loading}
-              loadingText="Opening checkout…"
-              onClick={handleUpgrade}
-            >
-              Upgrade to Pro — {selectedOption.symbol}9/month
-            </Button>
+            <Skeleton isLoaded={!pricesLoading} borderRadius="10px">
+              <Button size="md" borderRadius="10px" w="full"
+                bg="#4C5FD5" color="white" fontWeight="700" fontSize="14px"
+                _hover={{ bg: '#3D4FBF' }}
+                isLoading={loading} loadingText="Opening checkout…"
+                onClick={handleUpgrade}>
+                Upgrade to Pro — {label(currency)}/month
+              </Button>
+            </Skeleton>
 
             <Text fontSize="11px" color={muted} textAlign="center">
               Cancel anytime · Secure payment via Stripe
