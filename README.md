@@ -4,37 +4,44 @@
 
 Spendable helps freelancers with irregular income answer that question with confidence. Not an accounting tool — a financial clarity tool that answers the one question that matters.
 
+Live at **[app.spendable.finance](https://app.spendable.finance)**
+
 ---
 
 ## What It Does
 
-| Metric | What It Means |
-|---|---|
-| **Safe to Spend** | Balance minus tax reserve, emergency buffer & upcoming bills |
-| **Weekly Allowance** | Safe-to-spend divided over your runway |
-| **Runway** | How many months until you're out of safe funds |
-| **Smoothed Income** | 6-month rolling average to normalise income spikes |
-| **Tax Reserve** | Auto-calculated set-aside based on the last 12 months |
+| Metric               | What It Means                                                     |
+| -------------------- | ----------------------------------------------------------------- |
+| **Safe to Spend**    | Balance minus tax reserve, emergency buffer & upcoming bills      |
+| **Weekly Allowance** | Safe-to-spend divided over your runway                            |
+| **Runway**           | How many months until you're out of safe funds                    |
+| **Smoothed Income**  | 6-month rolling average to normalise income spikes                |
+| **Tax Reserve**      | Auto-calculated set-aside based on the last 12 months             |
 | **Confidence Score** | 0–100 score based on runway, tax reserve, buffer & income history |
+| **Tax Tracker**      | YTD income vs estimated bill, payment schedule, mark as paid      |
 
 ---
 
 ## Subscription Plans
 
-| Feature | Free | Pro |
-|---|---|---|
-| Income entries | Up to 5 (all-time) | Unlimited |
-| Recurring expenses | Up to 3 | Unlimited |
-| Upcoming expenses | Up to 3 | Unlimited |
-| Safe-to-spend dashboard | ✓ | ✓ |
-| Tax reserve tracking | ✓ | ✓ |
-| Emergency buffer | ✓ | ✓ |
-| Financial confidence score | ✓ | ✓ |
-| 6-month forecast | — | ✓ |
-| CSV & XLSX export | — | ✓ (+ 30-day grace after cancel) |
-| CSV / XLSX income import | ✓ (up to free limit) | ✓ (unlimited) |
-| Currencies | USD, GBP, EUR, CAD, AUD | USD, GBP, EUR, CAD, AUD |
-| Pricing | Free | $9 / £9 / €9 / C$9 / A$9 per month |
+| Feature                    | Free                    | Pro                             |
+| -------------------------- | ----------------------- | ------------------------------- |
+| Income entries             | Up to 5 (all-time)      | Unlimited                       |
+| Recurring expenses         | Up to 3                 | Unlimited                       |
+| Upcoming expenses          | Up to 3                 | Unlimited                       |
+| Safe-to-spend dashboard    | ✓                       | ✓                               |
+| Tax reserve tracking       | ✓                       | ✓                               |
+| Tax Tracker                | ✓                       | ✓                               |
+| Emergency buffer           | ✓                       | ✓                               |
+| Financial confidence score | ✓                       | ✓                               |
+| 6-month forecast           | —                       | ✓                               |
+| CSV & XLSX export          | —                       | ✓ (+ 30-day grace after cancel) |
+| CSV / XLSX income import   | ✓ (up to free limit)    | ✓ (unlimited)                   |
+| Currencies                 | USD, GBP, EUR, CAD, AUD | USD, GBP, EUR, CAD, AUD         |
+| Pricing                    | Free                    | Fetched live from Stripe        |
+
+> Prices are fetched dynamically from Stripe via the `get-prices` Edge Function.
+> Any price change in Stripe propagates to the UI automatically.
 
 ---
 
@@ -59,8 +66,8 @@ spendable/
 │   │   ├── forecast/             # ForecastChart, ForecastTable, RunwayCard
 │   │   ├── income/               # IncomeYearGroup, IncomeEntryItem, CsvImportModal
 │   │   ├── layout/
-│   │   │   └── AppShell.tsx      # Sidebar (desktop fixed), mobile hamburger drawer, offline/mock banners
-│   │   ├── subscription/         # UpgradeModal, SubscriptionCard
+│   │   │   └── AppShell.tsx      # Sidebar (desktop fixed), mobile hamburger drawer, banners
+│   │   ├── subscription/         # UpgradeModal (live prices), SubscriptionCard
 │   │   └── ui/                   # PageHeader, ErrorBoundary, SpendableMark, LastUpdatedIndicator
 │   ├── hooks/
 │   │   ├── useAuth.tsx               # Auth context + hook
@@ -68,39 +75,45 @@ spendable/
 │   │   ├── useIncomeByYear.ts        # Lazy year-based income loading
 │   │   ├── useOnlineStatus.ts        # Online/offline detection
 │   │   ├── usePageTitle.ts           # Sets document.title per page
+│   │   ├── usePrices.ts              # Fetches live Stripe prices via get-prices Edge Function
 │   │   ├── useSubscription.ts        # Plan, limits, feature gating, grace period
 │   │   └── useSubscriptionContext.tsx # Single shared subscription row fetch (context)
 │   ├── lib/
-│   │   ├── supabase.ts           # Supabase client + all API helpers (incl. batchInsert, count)
+│   │   ├── supabase.ts           # Supabase client + all API helpers
 │   │   └── mockStore.ts          # Offline seed data + in-memory store
 │   ├── pages/
-│   │   ├── AuthPage.tsx          # Sign in / sign up with forgot-password
-│   │   ├── DashboardPage.tsx     # Safe-to-spend hero, KPI cards, charts
+│   │   ├── AuthPage.tsx          # Sign in / sign up / forgot password / password reset
+│   │   ├── DashboardPage.tsx     # Safe-to-spend hero, KPI cards, charts, stale income warning
 │   │   ├── IncomePage.tsx        # Year-grouped timeline, CSV import, lazy year loading
 │   │   ├── ExpensesPage.tsx      # Recurring expense table + mobile card view
 │   │   ├── UpcomingPage.tsx      # One-off upcoming costs with due-date badges
+│   │   ├── TaxTrackerPage.tsx    # Tax pot, YTD income, payment schedule, mark as paid
 │   │   ├── ForecastPage.tsx      # 6-month forecast (Pro only)
-│   │   ├── SettingsPage.tsx      # Tax, buffer, currency, subscription card, danger zone
+│   │   ├── SettingsPage.tsx      # Tax, buffer, currency, payment schedule, subscription, danger zone
 │   │   ├── TermsPage.tsx         # Full Terms of Service
 │   │   └── PrivacyPage.tsx       # Full GDPR/UK GDPR Privacy Policy
 │   ├── services/
 │   │   └── stripe.ts             # createCheckoutSession(), openCustomerPortal(), plan constants
 │   ├── types/
-│   │   ├── index.ts              # All core TypeScript types incl. subscription types
+│   │   ├── index.ts              # All core TypeScript types incl. subscription + tax_schedule
 │   │   └── csvImport.ts          # CSV import step types, field mappings, row shape
 │   └── utils/
 │       ├── calculations.ts       # All financial calculations (pure functions)
 │       ├── csvImport.ts          # CSV parsing, auto-mapping, date parsing, row validation
 │       ├── exportCsv.ts          # CSV export — income, expenses, full snapshot
 │       ├── forecast.ts           # 6-month projection logic
+│       ├── taxTracker.ts         # Tax year calc, payment schedule, deadline logic
 │       └── incomeMonths.ts       # Year/month timeline grouping helpers
 ├── supabase/
 │   ├── functions/
 │   │   ├── create-checkout/      # Creates Stripe Checkout session (JWT-verified)
 │   │   ├── customer-portal/      # Opens Stripe Customer Portal (JWT-verified)
+│   │   ├── delete-account/       # Cancels Stripe sub + deletes all user data
+│   │   ├── get-prices/           # Returns live Stripe prices (no auth required)
 │   │   └── stripe-webhook/       # Handles Stripe events, updates user_subscriptions
-│   └── config.toml               # Disables gateway JWT check (functions verify internally)
-├── .env.example                  # All required environment variables
+│   └── config.toml               # Edge Function JWT configuration
+├── supabase-schema.sql           # Full DB schema + migration for tax_schedule column
+├── .env.example                  # All required environment variables (no real values)
 ├── package.json
 └── vite.config.ts
 ```
@@ -112,7 +125,7 @@ spendable/
 ### 1. Install
 
 ```bash
-cd spendable
+cd spendable-app
 yarn install
 ```
 
@@ -135,8 +148,9 @@ yarn dev    # http://localhost:3000
 ## Supabase Setup
 
 1. Create a project at [supabase.com](https://supabase.com)
-2. Run the schema SQL in the Supabase SQL Editor. Create the following tables: `user_settings`, `income_events`, `recurring_expenses`, `upcoming_expenses`, `user_subscriptions` — with RLS enabled and all columns matching the TypeScript types in `src/types/index.ts`.
-3. Deploy the three Edge Functions:
+2. Run `supabase-schema.sql` in the Supabase SQL Editor (creates all tables with RLS)
+3. If upgrading an existing database, run the migration block at the bottom of the schema file to add the `tax_schedule` column
+4. Deploy all Edge Functions:
 
 ```bash
 supabase link --project-ref <your-project-ref>
@@ -144,46 +158,65 @@ supabase functions deploy create-checkout
 supabase functions deploy customer-portal
 supabase functions deploy stripe-webhook
 supabase functions deploy delete-account
+supabase functions deploy get-prices
 ```
 
-4. Set secrets in Supabase Dashboard → Edge Functions → Secrets:
+5. Set secrets in Supabase Dashboard → Edge Functions → Secrets:
 
 ```
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_USD=price_...
+STRIPE_PRICE_GBP=price_...
+STRIPE_PRICE_EUR=price_...
+STRIPE_PRICE_CAD=price_...
+STRIPE_PRICE_AUD=price_...
+SUPABASE_SERVICE_ROLE_KEY=...
 ```
+
+> The `STRIPE_PRICE_*` secrets are used by `get-prices` to fetch live amounts from Stripe.
+> They are server-side secrets — separate from the `VITE_STRIPE_PRICE_*` env vars used by the frontend for checkout.
 
 ---
 
 ## Stripe Setup
 
-1. Create a **Spendable Pro** product with five monthly prices: USD ($9), GBP (£9), EUR (€9), CAD (C$9), AUD (A$9)
-2. Copy the price IDs into `.env`:
-
-```
-VITE_STRIPE_PRICE_USD=price_...
-VITE_STRIPE_PRICE_GBP=price_...
-VITE_STRIPE_PRICE_EUR=price_...
-VITE_STRIPE_PRICE_CAD=price_...
-VITE_STRIPE_PRICE_AUD=price_...
-```
-
+1. Create a **Spendable Pro** product with five monthly prices (USD, GBP, EUR, CAD, AUD)
+2. Copy the price IDs into `.env` as `VITE_STRIPE_PRICE_*` (used for checkout) and into Supabase secrets as `STRIPE_PRICE_*` (used by `get-prices` for dynamic price display)
 3. Register the webhook in Stripe Dashboard → Developers → Webhooks:
    - URL: `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`
    - Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`, `invoice.payment_succeeded`
-4. Add your Terms of Service and Privacy Policy URLs in Stripe account settings before going live.
+4. Add Terms of Service and Privacy Policy URLs in Stripe account settings:
+   - Terms: `https://app.spendable.finance/terms`
+   - Privacy: `https://app.spendable.finance/privacy`
 
-For local testing:
+---
 
-```bash
-stripe listen --forward-to https://<project-ref>.supabase.co/functions/v1/stripe-webhook
-```
+## Dynamic Pricing
+
+Prices shown in the UI are fetched live from Stripe via the `get-prices` Edge Function rather than hardcoded. This means any price change in Stripe automatically propagates to:
+
+- The upgrade modal (UpgradeModal.tsx)
+- The subscription card (SubscriptionCard.tsx)
+- The forecast page upgrade prompt
+- The landing page pricing section
+
+Prices are cached in module memory for the duration of the browser session to avoid redundant fetches. Fallback values are used if the fetch fails.
+
+---
+
+## Security
+
+- **In transit**: All traffic is encrypted via TLS (HTTPS enforced by Vercel)
+- **At rest**: Passwords are hashed with bcrypt by Supabase Auth — never stored in plain text
+- **API keys**: The Stripe secret key never touches the browser — all Stripe calls go through Supabase Edge Functions
+- **Auth**: Every Edge Function verifies the user's Supabase JWT server-side. The `userId` is always extracted from the verified token, never trusted from the request body
+- **RLS**: Row Level Security is enabled on all tables — users can only read and write their own data
+- **Mock mode**: `VITE_MOCK_AUTH=true` is disabled in production builds (`import.meta.env.PROD`)
 
 ---
 
 ## CSV Import (Income Only)
-
-The CSV import feature supports importing historical income entries from a CSV file.
 
 **Supported formats:** `.csv` and `.xlsx` / `.xls`
 
@@ -193,41 +226,24 @@ Date,Source,Amount,Notes
 2026-02-01,Retainer Client,1200,Monthly retainer
 ```
 
-**Import flow:**
-1. Upload `.csv` file (drag & drop or file picker)
-2. Map CSV columns to Spendable fields (auto-detected where possible)
-3. Preview first 5 rows with per-row validation
-4. Confirm and import (batch insert in chunks of 50)
-
-**Rules:**
-- Income entries only — recurring expenses and upcoming bills must be added manually
 - Maximum 500 rows per import
-- Free plan: blocked if import would exceed the 5-entry limit (Upgrade to Pro modal shown)
-- Duplicate detection: rows sharing the same source + amount + date are flagged; users can choose to skip them
-- Accepted date formats: `YYYY-MM-DD`, `DD/MM/YYYY`, `MM/DD/YYYY`, `DD-MM-YYYY`, and most browser-parseable formats
-- Amounts can include currency symbols (`£`, `$`, `€`) and commas — stripped automatically
-- Excel dates (serial numbers and formatted date cells) are handled automatically by SheetJS
-- A CSV template can be downloaded from the import modal
+- Free plan: blocked if import would exceed the 5-entry limit
+- Duplicate detection: rows sharing the same source + amount + date are flagged
+- Accepted date formats: `YYYY-MM-DD`, `DD/MM/YYYY`, `MM/DD/YYYY`, and most browser-parseable formats
 
 ---
 
 ## Offline Support
 
-Spendable works read-only when the user loses internet connection:
-
-- All financial data is cached to `localStorage` after every successful fetch
+- All financial data cached to `localStorage` after every successful fetch
 - On reconnect the cache is refreshed automatically
 - A yellow banner is shown when offline
-- Write actions (Add Income, Import CSV, Add Expense) are disabled until reconnected
-- Mock mode (`VITE_MOCK_AUTH=true`) uses its own separate in-memory store and is always available
-
-**Mock mode note:** `VITE_MOCK_AUTH=true` is ignored in production builds (`import.meta.env.PROD === true`). Safe to leave in `.env.example`.
+- Write actions are disabled until reconnected
+- Cache is cleared on sign-out to prevent cross-user data leakage
 
 ---
 
 ## Core Calculations
-
-All calculations are pure TypeScript functions in `src/utils/calculations.ts`.
 
 ```ts
 tax_reserve    = total_income_12mo * tax_rate
@@ -236,56 +252,40 @@ safe_to_spend  = balance - tax_reserve - buffer - all_unpaid_upcoming
 runway_months  = safe_to_spend / monthly_expenses
 smoothed       = sum(last_6_months_income) / 6
 weekly         = safe_to_spend / (runway_months * 4.33)
+
+// Tax Tracker
+ytd_income     = income within current tax year (Apr–Apr for UK, Jan–Dec for others)
+estimated_bill = ytd_income * tax_rate
+pot_pct        = reserved / estimated_bill (clamped 0–100)
 ```
 
 ---
 
 ## Pages
 
-| Route | Page | Key features |
-|---|---|---|
-| `/` | Dashboard | Safe-to-spend hero, KPI cards, income trend chart, balance breakdown |
-| `/income` | Income | Year-grouped timeline, lazy year loading, CSV import, add/edit/delete |
-| `/expenses` | Recurring Expenses | Expense table, active toggle, category badges, mobile card view |
-| `/upcoming` | Upcoming Expenses | One-off costs with due-date badges, mark paid, edit/delete |
-| `/tax`      | Tax Tracker | YTD income, estimated bill, pot progress, payment schedule (annual/quarterly) |
-| `/forecast` | Forecast | 6-month area chart, monthly table, runway card (Pro only) |
-| `/settings` | Settings | Tax rate, payment schedule, buffer, currency, subscription card, data export, danger zone |
-| `/terms` | Terms of Service | Full ToS (England & Wales) |
-| `/privacy` | Privacy Policy | Full GDPR/UK GDPR policy |
+| Route       | Page               | Key features                                                             |
+| ----------- | ------------------ | ------------------------------------------------------------------------ |
+| `/`         | Dashboard          | Safe-to-spend hero, KPI cards, income trend, stale income warning        |
+| `/income`   | Income             | Year-grouped timeline, lazy loading, CSV import, add/edit/delete         |
+| `/expenses` | Recurring Expenses | Expense table, active toggle, category badges                            |
+| `/upcoming` | Upcoming Expenses  | One-off costs, due-date badges, mark paid                                |
+| `/tax`      | Tax Tracker        | YTD vs estimated bill, payment schedule (annual/quarterly), mark as paid |
+| `/forecast` | Forecast           | 6-month area chart, monthly table, runway card (Pro only)                |
+| `/settings` | Settings           | Tax rate, payment schedule, buffer, currency, subscription, danger zone  |
+| `/terms`    | Terms of Service   | Full ToS (England & Wales)                                               |
+| `/privacy`  | Privacy Policy     | Full GDPR/UK GDPR policy                                                 |
 
 ---
 
 ## Database Tables
 
-- `user_settings` — tax rate, tax schedule (annual/quarterly), buffer months, starting balance, currency
+- `user_settings` — tax rate, tax schedule (`annual`/`quarterly`), buffer months, starting balance, currency
 - `income_events` — amount, date, source, notes
 - `recurring_expenses` — name, amount, frequency, category, is_active
 - `upcoming_expenses` — name, amount, due_date, is_paid
 - `user_subscriptions` — plan, status, stripe_customer_id, period_end
 
-All tables have Row Level Security enabled. The `user_subscriptions` table is write-protected to service role only — only the webhook Edge Function can update subscription status.
-
----
-
-## Mock / Offline Mode
-
-Set `VITE_MOCK_AUTH=true` in `.env` to run without any Supabase connection. Seed data includes 12 months of income, 8 expenses, and an $18,500 starting balance. Data persists to `localStorage`. A yellow banner appears when active. Reset via Settings → Reset mock data.
-
----
-
-## Roadmap
-
-- [x] Grace period export after subscription cancellation (30 days)
-- [x] CSV import for income history
-- [x] Mobile-responsive layout (drawer nav, card views)
-- [x] Upcoming expenses with due-date badges
-- [x] Terms of Service + Privacy Policy pages
-- [ ] Plaid bank sync
-- [ ] Invoice tracking
-- [ ] Mobile app (React Native)
-- [ ] Quarterly tax reminders
-- [ ] Goal-based savings targets
+All tables have Row Level Security enabled. `user_subscriptions` is write-protected to service role only.
 
 ---
 
