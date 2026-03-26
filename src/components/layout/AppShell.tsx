@@ -55,7 +55,8 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     <Flex direction="column" bg={S.bg} h="100%" py={5} px={3}>
 
       {/* Logo */}
-      <HStack px={3} mb={6} spacing={2.5}>
+      <HStack px={3} mb={6} spacing={2.5} cursor="pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        _hover={{ opacity: 0.85 }} transition="opacity 0.15s">
         <SpendableMark size={32} rx={8} />
         <Box>
           <Text fontWeight="700" fontSize="15px" letterSpacing="-0.3px" lineHeight="1.1" color="white">
@@ -164,7 +165,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <HStack display={{ base: 'flex', md: 'none' }} px={4} py={3} bg={S.bg}
           justify="space-between" position="sticky" top={0} zIndex={9}
           borderBottom="1px solid" borderColor={S.border}>
-          <HStack spacing={2.5}>
+          <HStack spacing={2.5} cursor="pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            _hover={{ opacity: 0.85 }} transition="opacity 0.15s">
             <SpendableMark size={28} rx={7} />
             <Text fontWeight="700" fontSize="14px" color="white" letterSpacing="-0.3px">
               Spendable

@@ -1,9 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ChakraProvider, extendTheme, Spinner, Center } from '@chakra-ui/react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { SubscriptionProvider } from './hooks/useSubscriptionContext';
 import { AppShell } from './components/layout/AppShell';
+import { usePostHog } from '@posthog/react';
+import { useEffect } from 'react';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { IncomePage } from './pages/IncomePage';
@@ -138,6 +140,22 @@ const theme = extendTheme({
 
 function AppRoutes() {
   const { user, loading } = useAuth();
+  const posthog = usePostHog();
+  const location = useLocation();
+
+  // Identify user on login, reset on logout
+  useEffect(() => {
+    if (user) {
+      posthog?.identify(user.id, { email: user.email });
+    } else {
+      posthog?.reset();
+    }
+  }, [user, posthog]);
+
+  // Track page views on route change
+  useEffect(() => {
+    posthog?.capture('$pageview');
+  }, [location.pathname, posthog]);
 
   if (loading) {
     return (
