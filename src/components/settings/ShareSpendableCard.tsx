@@ -4,7 +4,7 @@ import {
 import { RiLink, RiTwitterXLine, RiHeart2Line } from 'react-icons/ri';
 
 const SHARE_URL  = 'https://spendable.finance';
-const TWEET_TEXT = `Freelancers with irregular income should check this out.\n\nSpendable helps answer the question: "How much money can I safely spend right now?"\n\n${SHARE_URL}`;
+const TWEET_TEXT = `Freelancers with irregular income should check this out.\n\nSpendable helps answer the question: "How much money can I safely spend right now?"\n\n${SHARE_URL} by @spendable_`;
 
 export function ShareSpendableCard() {
   const toast = useToast();
@@ -32,7 +32,7 @@ export function ShareSpendableCard() {
   };
 
   const handleTweet = () => {
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(TWEET_TEXT)}`;
+    const url = `https://x.com/intent/post?text=${encodeURIComponent(TWEET_TEXT)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
