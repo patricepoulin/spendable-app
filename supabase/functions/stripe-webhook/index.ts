@@ -78,7 +78,7 @@ async function upsertSubscription(userId: string, data: Record<string, unknown>)
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   const sig    = req.headers.get('stripe-signature');

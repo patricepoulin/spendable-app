@@ -48,6 +48,7 @@ export const PLANS = {
     limits:   { incomePerMonth: Infinity },
     features: [
       'Unlimited income & expense tracking',
+      'Tax Tracker with payment schedule',
       '6-month financial forecast',
       'CSV & XLSX export',
       'Income smoothing & runway analysis',

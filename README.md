@@ -10,35 +10,35 @@ Live at **[app.spendable.finance](https://app.spendable.finance)**
 
 ## What It Does
 
-| Metric               | What It Means                                                     |
-| -------------------- | ----------------------------------------------------------------- |
-| **Safe to Spend**    | Balance minus tax reserve, emergency buffer & upcoming bills      |
-| **Weekly Allowance** | Safe-to-spend divided over your runway                            |
-| **Runway**           | How many months until you're out of safe funds                    |
-| **Smoothed Income**  | 6-month rolling average to normalise income spikes                |
-| **Tax Reserve**      | Auto-calculated set-aside based on the last 12 months             |
+| Metric | What It Means |
+|---|---|
+| **Safe to Spend** | Balance minus tax reserve, emergency buffer & upcoming bills |
+| **Weekly Allowance** | Safe-to-spend divided over your runway |
+| **Runway** | How many months until you're out of safe funds |
+| **Smoothed Income** | 6-month rolling average to normalise income spikes |
+| **Tax Reserve** | Auto-calculated set-aside based on the last 12 months |
 | **Confidence Score** | 0–100 score based on runway, tax reserve, buffer & income history |
-| **Tax Tracker**      | YTD income vs estimated bill, payment schedule, mark as paid      |
+| **Tax Tracker** | YTD income vs estimated bill, payment schedule, mark as paid |
 
 ---
 
 ## Subscription Plans
 
-| Feature                    | Free                    | Pro                             |
-| -------------------------- | ----------------------- | ------------------------------- |
-| Income entries             | Up to 5 (all-time)      | Unlimited                       |
-| Recurring expenses         | Up to 3                 | Unlimited                       |
-| Upcoming expenses          | Up to 3                 | Unlimited                       |
-| Safe-to-spend dashboard    | ✓                       | ✓                               |
-| Tax reserve tracking       | ✓                       | ✓                               |
-| Tax Tracker                | ✓                       | ✓                               |
-| Emergency buffer           | ✓                       | ✓                               |
-| Financial confidence score | ✓                       | ✓                               |
-| 6-month forecast           | —                       | ✓                               |
-| CSV & XLSX export          | —                       | ✓ (+ 30-day grace after cancel) |
-| CSV / XLSX income import   | ✓ (up to free limit)    | ✓ (unlimited)                   |
-| Currencies                 | USD, GBP, EUR, CAD, AUD | USD, GBP, EUR, CAD, AUD         |
-| Pricing                    | Free                    | Fetched live from Stripe        |
+| Feature | Free | Pro |
+|---|---|---|
+| Income entries | Up to 5 (all-time) | Unlimited |
+| Recurring expenses | Up to 3 | Unlimited |
+| Upcoming expenses | Up to 3 | Unlimited |
+| Safe-to-spend dashboard | ✓ | ✓ |
+| Tax reserve tracking | ✓ | ✓ |
+| Tax Tracker | — | ✓ |
+| Emergency buffer | ✓ | ✓ |
+| Financial confidence score | ✓ | ✓ |
+| 6-month forecast | — | ✓ |
+| CSV & XLSX export | — | ✓ (+ 30-day grace after cancel) |
+| CSV / XLSX income import | ✓ (up to free limit) | ✓ (unlimited) |
+| Currencies | USD, GBP, EUR, CAD, AUD | USD, GBP, EUR, CAD, AUD |
+| Pricing | Free | Fetched live from Stripe |
 
 > Prices are fetched dynamically from Stripe via the `get-prices` Edge Function.
 > Any price change in Stripe propagates to the UI automatically.
@@ -263,17 +263,17 @@ pot_pct        = reserved / estimated_bill (clamped 0–100)
 
 ## Pages
 
-| Route       | Page               | Key features                                                             |
-| ----------- | ------------------ | ------------------------------------------------------------------------ |
-| `/`         | Dashboard          | Safe-to-spend hero, KPI cards, income trend, stale income warning        |
-| `/income`   | Income             | Year-grouped timeline, lazy loading, CSV import, add/edit/delete         |
-| `/expenses` | Recurring Expenses | Expense table, active toggle, category badges                            |
-| `/upcoming` | Upcoming Expenses  | One-off costs, due-date badges, mark paid                                |
-| `/tax`      | Tax Tracker        | YTD vs estimated bill, payment schedule (annual/quarterly), mark as paid |
-| `/forecast` | Forecast           | 6-month area chart, monthly table, runway card (Pro only)                |
-| `/settings` | Settings           | Tax rate, payment schedule, buffer, currency, subscription, danger zone  |
-| `/terms`    | Terms of Service   | Full ToS (England & Wales)                                               |
-| `/privacy`  | Privacy Policy     | Full GDPR/UK GDPR policy                                                 |
+| Route | Page | Key features |
+|---|---|---|
+| `/` | Dashboard | Safe-to-spend hero, KPI cards, income trend, stale income warning |
+| `/income` | Income | Year-grouped timeline, lazy loading, CSV import, add/edit/delete |
+| `/expenses` | Recurring Expenses | Expense table, active toggle, category badges |
+| `/upcoming` | Upcoming Expenses | One-off costs, due-date badges, mark paid |
+| `/tax` | Tax Tracker | YTD vs estimated bill, payment schedule (annual/quarterly), mark as paid (Pro only) |
+| `/forecast` | Forecast | 6-month area chart, monthly table, runway card (Pro only) |
+| `/settings` | Settings | Tax rate, payment schedule, buffer, currency, subscription, danger zone |
+| `/terms` | Terms of Service | Full ToS (England & Wales) |
+| `/privacy` | Privacy Policy | Full GDPR/UK GDPR policy |
 
 ---
 

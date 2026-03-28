@@ -1,6 +1,6 @@
 import {
   Box, VStack, HStack, Text, Icon, SimpleGrid, Progress,
-  Badge, Skeleton, Tooltip, Button,
+  Badge, Skeleton, Tooltip, Button, useDisclosure,
 } from '@chakra-ui/react';
 import {
   RiPercentLine, RiCalendarCheckLine, RiAlertLine,
@@ -12,6 +12,9 @@ import { useState, useEffect } from 'react';
 import { useFinancials } from '../hooks/useFinancials';
 import { useAuth } from '../hooks/useAuth';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useSubscription } from '../hooks/useSubscription';
+import { usePrices } from '../hooks/usePrices';
+import { UpgradeModal } from '../components/subscription/UpgradeModal';
 import { PageHeader } from '../components/ui/PageHeader';
 import { calcTaxTracker, daysUntilDeadline, getTaxYearStartIso } from '../utils/taxTracker';
 import { calcTaxReserve } from '../utils/calculations';
@@ -201,6 +204,9 @@ export function TaxTrackerPage() {
   usePageTitle('Tax Tracker');
   const { user }                         = useAuth();
   const { settings, loading: finLoading } = useFinancials();
+  const { isPro, loading: subLoading }   = useSubscription();
+  const { label: priceLabel }            = usePrices();
+  const { isOpen: isUpgradeOpen, onOpen: onUpgradeOpen, onClose: onUpgradeClose } = useDisclosure();
 
   const currency    = settings?.currency ?? 'USD';
   const taxRate     = settings?.tax_rate ?? 0.25;
@@ -275,6 +281,47 @@ export function TaxTrackerPage() {
     if (currency.toUpperCase() === 'GBP') return 'Annual (UK self-assessment)';
     return 'Annual payment schedule';
   })();
+
+  // Blank while subscription loads — prevents free-plan gate flashing for Pro users
+  if (subLoading) {
+    return <Box minH="100vh" bg={PAGE_BG} />;
+  }
+
+  if (!isPro) {
+    return (
+      <Box>
+        <Box position="relative" overflow="hidden" bg={PAGE_BG} minH="100vh">
+          <Box position="absolute" top="-120px" right="-120px" w="520px" h="520px" borderRadius="full"
+            bg="radial-gradient(circle, rgba(212,168,0,0.07) 0%, transparent 70%)" pointerEvents="none" />
+          <Box position="relative" display="flex" alignItems="center" justifyContent="center" minH="70vh">
+            <Box maxW="420px" w="full" mx="auto" px={6} textAlign="center">
+              <Box w={16} h={16} borderRadius="16px" bg="#fffbeb" border="1px solid #fde68a"
+                display="flex" alignItems="center" justifyContent="center" mx="auto" mb={6}>
+                <Icon as={RiPercentLine} color="#D4A800" boxSize={7} />
+              </Box>
+              <Text fontSize="24px" fontWeight="800" letterSpacing="-0.8px" color="#1C2B3A" mb={3}>
+                Tax Tracker
+              </Text>
+              <Text fontSize="15px" color="#5a6a7a" lineHeight="1.65" mb={6}>
+                Track your tax pot, see your estimated bill, and stay on top of every payment deadline — with the right schedule for your country.
+              </Text>
+              <Button
+                rightIcon={<Icon as={RiArrowRightLine} />}
+                bg="#4C5FD5" color="white" borderRadius="10px"
+                fontWeight="600" h="44px" px={6}
+                _hover={{ bg: '#3D4FBF' }}
+                onClick={onUpgradeOpen}
+              >
+                Unlock with Pro
+              </Button>
+              <Text fontSize="12px" color="#8a9aaa" mt={4}>From {priceLabel('usd')} · Cancel anytime</Text>
+            </Box>
+          </Box>
+          <UpgradeModal isOpen={isUpgradeOpen} onClose={onUpgradeClose} reason="manual" userCurrency={currency} />
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box>
