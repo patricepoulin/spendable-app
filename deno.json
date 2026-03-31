@@ -1,0 +1,12 @@
+{
+  "lint": {
+    "include": ["supabase/functions/"]
+  },
+  "fmt": {
+    "include": ["supabase/functions/"]
+  },
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true
+  }
+}

@@ -5,7 +5,7 @@ import {
   Input, Select,
   NumberInput, NumberInputField,
   NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper,
-  SimpleGrid, Alert, AlertIcon, useToast, useDisclosure,
+  SimpleGrid, Alert, AlertIcon, useToast, useDisclosure, Tooltip,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
   Input as ChakraInput,
 } from '@chakra-ui/react';
@@ -264,7 +264,31 @@ export function SettingsPage() {
           >
             <SimpleGrid columns={2} spacing={4}>
               <FormControl>
-                <FormLabel fontSize="12px" fontWeight="600" color={muted} mb={1.5}>Starting Balance</FormLabel>
+                <HStack mb={1.5} spacing={1.5} align="center">
+                  <FormLabel fontSize="12px" fontWeight="600" color={muted} mb={0}>
+                    Starting Balance
+                  </FormLabel>
+                  <Tooltip
+                    label={
+                      <Box fontSize="12px" lineHeight="1.6" maxW="220px" p={1}>
+                        <Text fontWeight="700" mb={1}>How to set this correctly</Text>
+                        <Text mb={1}>Use your <Text as="span" fontWeight="600">current account balance</Text>, minus any savings you don't want to touch — emergency fund, house deposit, etc.</Text>
+                        <Text>Re-anchor it whenever a large payment lands or you want to sync back to reality.</Text>
+                      </Box>
+                    }
+                    placement="top"
+                    hasArrow
+                    bg="#1C2B3A"
+                    color="white"
+                    borderRadius="8px"
+                    px={3}
+                    py={2}
+                  >
+                    <span>
+                      <Icon as={RiInformationLine} color={muted} boxSize="14px" cursor="help" />
+                    </span>
+                  </Tooltip>
+                </HStack>
                 <NumberInput
                   value={form.starting_balance} min={0} step={100}
                   onChange={val => setForm(f => ({ ...f, starting_balance: Number(val) }))}
@@ -276,7 +300,7 @@ export function SettingsPage() {
                   </NumberInputStepper>
                 </NumberInput>
                 <FormHelperText fontSize="11px" color={muted} mt={1.5}>
-                  Your current bank balance. Spendable estimates your running balance by adding all recorded income and subtracting expenses over time — update this whenever you want to re-anchor to your real balance.
+                  Current balance minus savings you don't want to spend. Update whenever a large payment lands.
                 </FormHelperText>
               </FormControl>
               <FormControl>

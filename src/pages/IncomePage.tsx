@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Box, Button, VStack, HStack, Text, Icon, Spinner,
   Modal, ModalOverlay, ModalContent, ModalHeader,
@@ -21,6 +21,7 @@ import { IncomeYearGroup } from '../components/income/IncomeYearGroup';
 import { useFinancials } from '../hooks/useFinancials';
 import { useAuth } from '../hooks/useAuth';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useSearchParams } from 'react-router-dom';
 import { formatCurrency } from '../utils/calculations';
 import { exportIncomeCsv } from '../utils/exportCsv';
 import { buildIncomeTimeline } from '../utils/incomeMonths';
@@ -46,6 +47,18 @@ export function IncomePage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast    = useToast();
   const currency = settings?.currency ?? 'USD';
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Auto-open add modal when navigated here with ?add=true
+  // (e.g. from the stale income warning CTA on the dashboard)
+  useEffect(() => {
+    if (searchParams.get('add') === 'true') {
+      onOpen();
+      // Remove the query param so refreshing the page doesn't re-open the modal
+      setSearchParams({}, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isOnline = useOnlineStatus();
   const {

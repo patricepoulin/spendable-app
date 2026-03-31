@@ -1,10 +1,10 @@
 import {
   Box, SimpleGrid, HStack, VStack, Text,
-  Alert, AlertIcon, Progress, Skeleton, SkeletonText, Icon, useToast, Tooltip,
+  Alert, AlertIcon, Progress, Skeleton, SkeletonText, Icon, useToast, Tooltip, Button,
 } from '@chakra-ui/react';
 import { RiInformationLine, RiSignalWifiErrorLine } from 'react-icons/ri';
 import { useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   RiWallet3Line, RiTimeLine, RiLineChartLine,
   RiArrowUpLine, RiShieldCheckLine,
@@ -276,6 +276,7 @@ export function DashboardPage() {
   const { metrics, income, expenses, upcoming, settings, loading, initialLoad, error, lastUpdated, liveFailedWithCache } = useFinancials();
   const currency = settings?.currency ?? 'USD';
   const toast = useToast();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const upgradedToastShown = useRef(false);
 
@@ -357,13 +358,25 @@ export function DashboardPage() {
       )}
 
       {showStaleWarning && (
-        <HStack px={4} py={2} bg="#f8fafc" borderBottom="1px solid #e2e8f0" spacing={2}>
-          <Icon as={RiTimeLine} color="#8a9aaa" boxSize="14px" flexShrink={0} />
-          <Text fontSize="12px" color="#5a6a7a">
-            Last income recorded{' '}
-            <Text as="span" fontWeight="600">{daysSinceLastIncome} days ago</Text>
-            {' '}— your figures may not reflect recent earnings.
-          </Text>
+        <HStack px={4} py={2.5} bg="#f8fafc" borderBottom="1px solid #e2e8f0"
+          spacing={3} justify="space-between" flexWrap="wrap">
+          <HStack spacing={2}>
+            <Icon as={RiTimeLine} color="#8a9aaa" boxSize="14px" flexShrink={0} />
+            <Text fontSize="12px" color="#5a6a7a">
+              Last income recorded{' '}
+              <Text as="span" fontWeight="600">{daysSinceLastIncome} days ago</Text>
+              {' '}— your figures may not reflect recent earnings.
+            </Text>
+          </HStack>
+          <Button
+            size="xs" variant="outline" borderRadius="6px"
+            borderColor="#c7d0f5" color="#4C5FD5" fontWeight="600" fontSize="11px"
+            h="26px" px={3} flexShrink={0}
+            _hover={{ bg: '#eef0fb', borderColor: '#4C5FD5' }}
+            onClick={() => navigate('/income?add=true')}
+          >
+            Log income →
+          </Button>
         </HStack>
       )}
 
