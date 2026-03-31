@@ -16,7 +16,8 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req: Request) => {
@@ -30,10 +31,13 @@ serve(async (req: Request) => {
     const supabaseUser = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
+      { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseUser.auth.getUser();
     if (authError || !user) throw new Error('Unauthorized');
 
     const userId = user.id;
@@ -58,7 +62,7 @@ serve(async (req: Request) => {
 
     // ── 5. Create Portal session ────────────────────────────────────────────
     const session = await stripe.billingPortal.sessions.create({
-      customer:   sub.stripe_customer_id,
+      customer: sub.stripe_customer_id,
       return_url: returnUrl,
     });
 
@@ -67,7 +71,7 @@ serve(async (req: Request) => {
     });
   } catch (err) {
     const message = (err as Error).message;
-    const status  = message === 'Unauthorized' ? 401 : 400;
+    const status = message === 'Unauthorized' ? 401 : 400;
     return new Response(JSON.stringify({ message }), {
       status,
       headers: { ...CORS, 'Content-Type': 'application/json' },

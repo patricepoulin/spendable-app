@@ -1,0 +1,13 @@
+{
+  // Enable Deno language server only for edge functions.
+  // The rest of the project (src/) continues to use the standard TypeScript server.
+  "deno.enablePaths": ["supabase/functions"],
+  "deno.configPath": "./deno.json",
+
+  // Disable the built-in TS server for the functions paths so the two
+  // language servers don't conflict with each other.
+  "typescript.validate.enable": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  }
+}
