@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ChakraProvider, extendTheme, Spinner, Center } from '@chakra-ui/react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
@@ -16,6 +16,7 @@ import { UpcomingPage } from './pages/UpcomingPage';
 import { TaxTrackerPage } from './pages/TaxTrackerPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 // ─── Chakra Theme ─────────────────────────────────────────────────────────────
 
@@ -171,7 +172,7 @@ function AppRoutes() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="*" element={<Navigate to="/auth" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     );
   }
@@ -188,7 +189,7 @@ function AppRoutes() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>
   );
