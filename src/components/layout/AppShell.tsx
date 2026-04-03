@@ -18,6 +18,8 @@ import { SpendableMark } from '../ui/SpendableMark';
 import { useSubscription } from '../../hooks/useSubscription';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { PAGE_BG } from '../../theme';
+import { openCustomerPortal } from '../../services/stripe';
+import { useState } from 'react';
 
 const NAV_ITEMS = [
   { label: 'Dashboard',    icon: RiDashboardLine,         href: '/'            },
@@ -135,6 +137,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isOnline                    = useOnlineStatus();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isPaymentFailing }        = useSubscription();
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const handleUpdateBilling = async () => {
+    setPortalLoading(true);
+    try { await openCustomerPortal('payment_method_update'); }
+    catch { /* portal will handle errors */ }
+    finally { setPortalLoading(false); }
+  };
 
   const showMockBanner    = isMockMode && isOnline;
   const showOfflineBanner = !isOnline && !isMockMode;
@@ -208,14 +218,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Text>
             </HStack>
             <Button
-              as={RouterLink}
-              to="/settings"
               size="xs"
               rightIcon={<Icon as={RiExternalLinkLine} boxSize="11px" />}
               bg="#e11d48" color="white"
               borderRadius="6px" fontWeight="700" fontSize="11px"
               _hover={{ bg: '#be123c' }}
               flexShrink={0}
+              isLoading={portalLoading}
+              loadingText="Opening…"
+              onClick={handleUpdateBilling}
             >
               Update billing
             </Button>

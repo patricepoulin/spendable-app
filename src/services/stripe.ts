@@ -117,13 +117,18 @@ export async function createCheckoutSession(
 
 // ─── Customer Portal ──────────────────────────────────────────────────────────
 
-/** Redirects to Stripe Customer Portal for managing subscription. */
-export async function openCustomerPortal(): Promise<void> {
+/** Redirects to Stripe Customer Portal for managing subscription.
+ *  Pass flow='payment_method_update' to land directly on the payment update screen.
+ */
+export async function openCustomerPortal(
+  flow?: 'payment_method_update'
+): Promise<void> {
   const res = await fetch(edgeFn('customer-portal'), {
     method: 'POST',
     headers: await authHeaders(),
     body: JSON.stringify({
       returnUrl: `${window.location.origin}/settings`,
+      flow,
     }),
   });
 

@@ -8,8 +8,10 @@ import {
   FormControl, FormLabel, Input, Textarea, Select,
   useDisclosure, useToast,
   Alert, AlertIcon,
+  Tabs, TabList, Tab, TabPanels, TabPanel,
+  Badge, Progress, SimpleGrid,
 } from '@chakra-ui/react';
-import { RiAddLine, RiDownload2Line, RiArrowDownSLine, RiUpload2Line } from 'react-icons/ri';
+import { RiAddLine, RiDownload2Line, RiArrowDownSLine, RiUpload2Line, RiDeleteBin2Line, RiCheckboxLine, RiCloseLine, RiPieChartLine } from 'react-icons/ri';
 import { CsvImportModal } from '../components/income/CsvImportModal';
 import { UpgradeModal } from '../components/subscription/UpgradeModal';
 import { useSubscription } from '../hooks/useSubscription';
@@ -77,6 +79,40 @@ export function IncomePage() {
 
   const [editing, setEditing]       = useState<IncomeEvent | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // ── Bulk delete state ──────────────────────────────────────────────────────
+  const [bulkMode, setBulkMode]       = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const { isOpen: isBulkDeleteOpen, onOpen: onBulkDeleteOpen, onClose: onBulkDeleteClose } = useDisclosure();
+  const bulkDeleteRef = useRef<HTMLButtonElement>(null);
+
+  const handleSelect = (id: string, checked: boolean) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      checked ? next.add(id) : next.delete(id);
+      return next;
+    });
+  };
+
+  const toggleBulkMode = () => {
+    setBulkMode(v => !v);
+    setSelectedIds(new Set());
+  };
+
+  const confirmBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      await Promise.all([...selectedIds].map(id => incomeApi.delete(id)));
+      toast({ title: `${selectedIds.size} entries removed`, status: 'info', duration: 2500, isClosable: true });
+      setSelectedIds(new Set());
+      setBulkMode(false);
+      await refresh();
+    } catch {
+      toast({ title: 'Failed to delete some entries', status: 'error', duration: 3000, isClosable: true });
+    } finally {
+      onBulkDeleteClose();
+    }
+  };
 
   const muted  = '#64748b';
   const border = '#e2e8f0';
@@ -216,6 +252,19 @@ export function IncomePage() {
                   Import CSV
                 </Button>
                 <Button
+                  leftIcon={<Icon as={bulkMode ? RiCloseLine : RiCheckboxLine} />}
+                  variant="outline" borderColor={bulkMode ? '#4C5FD5' : '#E8E8E3'}
+                  bg={bulkMode ? '#eef0fb' : 'white'}
+                  color={bulkMode ? '#4C5FD5' : '#5a6a7a'}
+                  h="32px" px={3}
+                  borderRadius="10px" fontWeight="600" fontSize="13px"
+                  _hover={{ bg: bulkMode ? '#e4e8fa' : '#F0EFE9' }}
+                  isDisabled={allLoadedIncome.length === 0}
+                  onClick={toggleBulkMode}
+                >
+                  {bulkMode ? 'Cancel' : 'Select'}
+                </Button>
+                <Button
                   leftIcon={<Icon as={RiAddLine} />}
                   bg="#4C5FD5" color="white"
                   h="32px" px={3}
@@ -276,57 +325,197 @@ export function IncomePage() {
               </Box>
 
             ) : (
-              <VStack spacing={5} align="stretch">
-                {/* Loaded year groups */}
-                {timeline.map(year => (
-                  <IncomeYearGroup
-                    key={year.year}
-                    year={year}
-                    currency={currency}
-                    onAdd={openAdd}
-                    onEdit={openEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
+              <Tabs colorScheme="brand" variant="soft-rounded" size="sm">
+                <HStack justify="space-between" align="center" mb={4} flexWrap="wrap" gap={3}>
+                  <TabList bg="white" border="1px solid #e2e8f0" borderRadius="10px" p={1}>
+                    <Tab fontWeight="600" fontSize="13px" borderRadius="8px" px={4} h="30px"
+                      _selected={{ bg: '#4C5FD5', color: 'white' }} color="#5a6a7a">
+                      <Icon as={RiArrowDownSLine} mr={1.5} boxSize="14px" />Timeline
+                    </Tab>
+                    <Tab fontWeight="600" fontSize="13px" borderRadius="8px" px={4} h="30px"
+                      _selected={{ bg: '#4C5FD5', color: 'white' }} color="#5a6a7a">
+                      <Icon as={RiPieChartLine} mr={1.5} boxSize="14px" />By Source
+                    </Tab>
+                  </TabList>
 
-                {/* Loading skeleton for years mid-fetch */}
-                {years.filter(s => s.loading).map(s => (
-                  <Box key={s.year}>
-                    <HStack px={1} pb={2}>
-                      <Text fontSize="13px" fontWeight="700" color="#1C2B3A">{s.year}</Text>
-                      <Spinner size="xs" color="#4C5FD5" ml={2} />
-                    </HStack>
-                    <Box bg="white" border="1px solid #e2e8f0" borderRadius="14px" p={8}
-                      display="flex" justifyContent="center">
-                      <Spinner color="#4C5FD5" />
-                    </Box>
-                  </Box>
-                ))}
-
-                {/* Load older year buttons */}
-                {unloadedYears.length > 0 && (
-                  <VStack spacing={2} align="stretch">
-                    {unloadedYears.map(year => (
+                  {/* Bulk delete toolbar — only visible when bulkMode is on */}
+                  {bulkMode && selectedIds.size > 0 && (
+                    <HStack spacing={2} px={3} py={1.5} bg="#fff1f2" border="1px solid #fecdd3"
+                      borderRadius="8px">
+                      <Text fontSize="12px" fontWeight="600" color="#9f1239">
+                        {selectedIds.size} selected
+                      </Text>
                       <Button
-                        key={year}
-                        leftIcon={<Icon as={RiArrowDownSLine} />}
-                        variant="outline" borderColor="#E8E8E3"
-                        bg="white" color="#5a6a7a"
-                        size="sm" borderRadius="10px"
-                        fontWeight="600" fontSize="13px"
-                        _hover={{ bg: '#f8fafc', borderColor: '#4C5FD5', color: '#4C5FD5' }}
-                        onClick={() => loadYear(year)}
+                        size="xs" bg="#e11d48" color="white" borderRadius="6px"
+                        fontWeight="700" fontSize="11px" h="24px"
+                        leftIcon={<Icon as={RiDeleteBin2Line} boxSize="11px" />}
+                        _hover={{ bg: '#be123c' }}
+                        onClick={onBulkDeleteOpen}
                       >
-                        Load {year}
+                        Delete selected
                       </Button>
-                    ))}
-                  </VStack>
-                )}
-              </VStack>
+                    </HStack>
+                  )}
+                </HStack>
+
+                <TabPanels>
+                  {/* ── Timeline tab ── */}
+                  <TabPanel p={0}>
+                    <VStack spacing={5} align="stretch">
+                      {timeline.map(year => (
+                        <IncomeYearGroup
+                          key={year.year}
+                          year={year}
+                          currency={currency}
+                          onAdd={openAdd}
+                          onEdit={openEdit}
+                          onDelete={handleDelete}
+                          selectedIds={selectedIds}
+                          onSelect={handleSelect}
+                          bulkMode={bulkMode}
+                        />
+                      ))}
+
+                      {years.filter(s => s.loading).map(s => (
+                        <Box key={s.year}>
+                          <HStack px={1} pb={2}>
+                            <Text fontSize="13px" fontWeight="700" color="#1C2B3A">{s.year}</Text>
+                            <Spinner size="xs" color="#4C5FD5" ml={2} />
+                          </HStack>
+                          <Box bg="white" border="1px solid #e2e8f0" borderRadius="14px" p={8}
+                            display="flex" justifyContent="center">
+                            <Spinner color="#4C5FD5" />
+                          </Box>
+                        </Box>
+                      ))}
+
+                      {unloadedYears.length > 0 && (
+                        <VStack spacing={2} align="stretch">
+                          {unloadedYears.map(year => (
+                            <Button
+                              key={year}
+                              leftIcon={<Icon as={RiArrowDownSLine} />}
+                              variant="outline" borderColor="#E8E8E3"
+                              bg="white" color="#5a6a7a"
+                              size="sm" borderRadius="10px"
+                              fontWeight="600" fontSize="13px"
+                              _hover={{ bg: '#f8fafc', borderColor: '#4C5FD5', color: '#4C5FD5' }}
+                              onClick={() => loadYear(year)}
+                            >
+                              Load {year}
+                            </Button>
+                          ))}
+                        </VStack>
+                      )}
+                    </VStack>
+                  </TabPanel>
+
+                  {/* ── By Source tab ── */}
+                  <TabPanel p={0}>
+                    {(() => {
+                      // Group all loaded income by source
+                      const bySource: Record<string, { total: number; count: number }> = {};
+                      allLoadedIncome.forEach(e => {
+                        if (!bySource[e.source]) bySource[e.source] = { total: 0, count: 0 };
+                        bySource[e.source].total += e.amount;
+                        bySource[e.source].count += 1;
+                      });
+                      const sorted = Object.entries(bySource)
+                        .sort(([, a], [, b]) => b.total - a.total);
+                      const grandTotal = allLoadedIncome.reduce((s, e) => s + e.amount, 0);
+
+                      return (
+                        <VStack spacing={3} align="stretch">
+                          {/* Summary card */}
+                          <Box bg="white" border="1px solid #e2e8f0" borderRadius="14px" p={5}>
+                            <Text fontSize="12px" fontWeight="700" color="#8a9aaa"
+                              textTransform="uppercase" letterSpacing="0.5px" mb={4}>
+                              Income by Client / Source
+                            </Text>
+                            <VStack spacing={3} align="stretch">
+                              {sorted.map(([source, data]) => {
+                                const pct = grandTotal > 0 ? (data.total / grandTotal) * 100 : 0;
+                                return (
+                                  <Box key={source}>
+                                    <HStack justify="space-between" mb={1}>
+                                      <HStack spacing={2}>
+                                        <Text fontSize="13px" fontWeight="600" color="#1C2B3A">
+                                          {source}
+                                        </Text>
+                                        <Badge fontSize="10px" colorScheme="gray" borderRadius="4px"
+                                          fontWeight="600">
+                                          {data.count} {data.count === 1 ? 'entry' : 'entries'}
+                                        </Badge>
+                                      </HStack>
+                                      <HStack spacing={3}>
+                                        <Text fontSize="11px" color="#8a9aaa" fontWeight="500">
+                                          {pct.toFixed(1)}%
+                                        </Text>
+                                        <Text fontSize="13px" fontWeight="700" color="#27AE60">
+                                          {new Intl.NumberFormat('en-US', {
+                                            style: 'currency', currency,
+                                            maximumFractionDigits: 0,
+                                          }).format(data.total)}
+                                        </Text>
+                                      </HStack>
+                                    </HStack>
+                                    <Progress
+                                      value={pct} size="xs" borderRadius="full"
+                                      bg="#e2e8f0"
+                                      sx={{ '& > div': { background: '#4C5FD5' } }}
+                                    />
+                                  </Box>
+                                );
+                              })}
+                            </VStack>
+                          </Box>
+
+                          {/* Grand total */}
+                          <Box bg="white" border="1px solid #e2e8f0" borderRadius="12px" px={5} py={3}>
+                            <HStack justify="space-between">
+                              <Text fontSize="13px" color="#5a6a7a" fontWeight="500">
+                                Total across all sources ({allLoadedIncome.length} entries)
+                              </Text>
+                              <Text fontSize="14px" fontWeight="800" color="#27AE60">
+                                {new Intl.NumberFormat('en-US', {
+                                  style: 'currency', currency, maximumFractionDigits: 0,
+                                }).format(grandTotal)}
+                              </Text>
+                            </HStack>
+                          </Box>
+                        </VStack>
+                      );
+                    })()}
+                  </TabPanel>
+                </TabPanels>
+              </Tabs>
             )}
           </Box>
         </Box>
       </Box>
+
+      {/* ── Bulk delete confirmation ── */}
+      <AlertDialog isOpen={isBulkDeleteOpen} leastDestructiveRef={bulkDeleteRef} onClose={onBulkDeleteClose} isCentered>
+        <AlertDialogOverlay bg="blackAlpha.200" backdropFilter="blur(4px)" />
+        <AlertDialogContent borderRadius="14px" border="1px solid #fecaca" mx={4}>
+          <AlertDialogHeader fontWeight="700" fontSize="15px" color="#991b1b" pb={2}>
+            Delete {selectedIds.size} {selectedIds.size === 1 ? 'entry' : 'entries'}?
+          </AlertDialogHeader>
+          <AlertDialogBody fontSize="13px" color="#5a6a7a">
+            This will permanently remove the selected income entries and update all your financial metrics. This cannot be undone.
+          </AlertDialogBody>
+          <AlertDialogFooter gap={2}>
+            <Button ref={bulkDeleteRef} variant="ghost" borderRadius="8px" fontWeight="600" fontSize="13px"
+              onClick={onBulkDeleteClose}>
+              Cancel
+            </Button>
+            <Button bg="#DC2626" color="white" borderRadius="8px" fontWeight="600" fontSize="13px"
+              _hover={{ bg: '#b91c1c' }} onClick={confirmBulkDelete}>
+              Delete {selectedIds.size} {selectedIds.size === 1 ? 'entry' : 'entries'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── CSV Import Modal ── */}
       <CsvImportModal

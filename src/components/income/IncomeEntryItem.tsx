@@ -1,4 +1,4 @@
-import { Tr, Td, HStack, Box, Text, Icon, IconButton } from '@chakra-ui/react';
+import { Tr, Td, HStack, Box, Text, Icon, IconButton, Checkbox } from '@chakra-ui/react';
 import { RiMoneyDollarCircleLine, RiPencilLine, RiDeleteBin2Line } from 'react-icons/ri';
 import type { IncomeEvent } from '../../types';
 
@@ -11,6 +11,10 @@ interface Props {
   rowHover: string;
   onEdit: (event: IncomeEvent) => void;
   onDelete: (id: string) => void;
+  // bulk select
+  selected: boolean;
+  onSelect: (id: string, checked: boolean) => void;
+  bulkMode: boolean;
 }
 
 function fmt(amount: number, currency: string) {
@@ -20,10 +24,23 @@ function fmt(amount: number, currency: string) {
 }
 
 export function IncomeEntryItem({
-  event, currency, border, subtext, muted, rowHover, onEdit, onDelete,
+  event, currency, border, subtext, muted, rowHover,
+  onEdit, onDelete, selected, onSelect, bulkMode,
 }: Props) {
   return (
-    <Tr _hover={{ bg: rowHover }} transition="background 0.1s">
+    <Tr _hover={{ bg: rowHover }} transition="background 0.1s"
+      bg={selected ? '#f0f4ff' : undefined}>
+      {/* Checkbox cell — always present but only visible in bulk mode */}
+      <Td py={3} borderColor={border} w="40px" pr={0}>
+        <Checkbox
+          isChecked={selected}
+          onChange={e => onSelect(event.id, e.target.checked)}
+          colorScheme="brand"
+          opacity={bulkMode ? 1 : 0}
+          pointerEvents={bulkMode ? 'auto' : 'none'}
+          transition="opacity 0.15s"
+        />
+      </Td>
       <Td py={3} borderColor={border}>
         <HStack spacing={2.5}>
           <Box

@@ -1,9 +1,9 @@
 import {
   Box, SimpleGrid, HStack, VStack, Text,
-  Alert, AlertIcon, Progress, Skeleton, SkeletonText, Icon, useToast, Tooltip, Button,
+  Alert, AlertIcon, Progress, Skeleton, SkeletonText, Icon, useToast, Tooltip, Button, IconButton,
 } from '@chakra-ui/react';
-import { RiInformationLine, RiSignalWifiErrorLine } from 'react-icons/ri';
-import { useEffect, useRef } from 'react';
+import { RiInformationLine, RiSignalWifiErrorLine, RiCloseLine, RiArrowRightLine } from 'react-icons/ri';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   RiWallet3Line, RiTimeLine, RiLineChartLine,
@@ -280,6 +280,16 @@ export function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const upgradedToastShown = useRef(false);
 
+  // First-run explainer — dismissed permanently in localStorage
+  const EXPLAINER_KEY = 'spendable_explainer_dismissed';
+  const [showExplainer, setShowExplainer] = useState(() => {
+    try { return localStorage.getItem(EXPLAINER_KEY) !== 'true'; } catch { return true; }
+  });
+  const dismissExplainer = () => {
+    setShowExplainer(false);
+    try { localStorage.setItem(EXPLAINER_KEY, 'true'); } catch { /* ignore */ }
+  };
+
   useEffect(() => {
     if (searchParams.get('upgraded') === 'true' && !upgradedToastShown.current) {
       upgradedToastShown.current = true;
@@ -407,6 +417,62 @@ export function DashboardPage() {
           status={confWithTier ?? { label: 'Loading…', color: colors.subtle, description: '', tier: 'good' }}
           isLoading={loading}
         />
+
+        {/* First-run explainer — shown once until dismissed */}
+        {showExplainer && !loading && income.length > 0 && (
+          <Box
+            bg="white" border="1px solid #c7d0f5" borderRadius="12px"
+            p={4} mb={5} position="relative"
+          >
+            <HStack align="flex-start" spacing={3}>
+              <Box
+                w={8} h={8} borderRadius="8px" bg="#eef0fb" border="1px solid #c7d0f5"
+                display="flex" alignItems="center" justifyContent="center" flexShrink={0} mt={0.5}
+              >
+                <Icon as={RiInformationLine} color="#4C5FD5" boxSize="15px" />
+              </Box>
+              <Box flex={1}>
+                <Text fontSize="13px" fontWeight="700" color="#1C2B3A" mb={1}>
+                  How your Safe to Spend is calculated
+                </Text>
+                <Text fontSize="12px" color="#5a6a7a" lineHeight="1.7" mb={3}>
+                  Your number = <Text as="span" fontWeight="600" color="#1C2B3A">Current Balance</Text>
+                  {' '}−{' '}<Text as="span" fontWeight="600" color="#D4A800">Tax Reserve</Text>
+                  {' '}−{' '}<Text as="span" fontWeight="600" color="#4C5FD5">Emergency Buffer</Text>
+                  {' '}−{' '}<Text as="span" fontWeight="600" color="#EB5757">Upcoming Bills</Text>
+                  {' '}= <Text as="span" fontWeight="700" color="#27AE60">what you can safely spend</Text>.
+                  It updates automatically as you log income and expenses.
+                </Text>
+                <HStack spacing={3} flexWrap="wrap">
+                  <Button
+                    size="xs" bg="#4C5FD5" color="white" borderRadius="6px"
+                    fontWeight="600" fontSize="11px" h="26px" px={3}
+                    rightIcon={<Icon as={RiArrowRightLine} boxSize="10px" />}
+                    _hover={{ bg: '#3D4FBF' }}
+                    onClick={() => navigate('/settings')}
+                  >
+                    Review your settings
+                  </Button>
+                  <Button
+                    size="xs" variant="ghost" color="#8a9aaa" borderRadius="6px"
+                    fontWeight="600" fontSize="11px" h="26px" px={2}
+                    _hover={{ color: '#5a6a7a' }}
+                    onClick={dismissExplainer}
+                  >
+                    Got it, don't show again
+                  </Button>
+                </HStack>
+              </Box>
+              <IconButton
+                aria-label="Dismiss" icon={<Icon as={RiCloseLine} boxSize="14px" />}
+                size="xs" variant="ghost" color="#8a9aaa" borderRadius="6px"
+                _hover={{ color: '#5a6a7a', bg: '#f8fafc' }}
+                onClick={dismissExplainer}
+                flexShrink={0}
+              />
+            </HStack>
+          </Box>
+        )}
 
         {/* Stat cards */}
         <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={4} mb={5}>

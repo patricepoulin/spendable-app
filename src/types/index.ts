@@ -14,6 +14,7 @@ export interface UserSettings {
   starting_balance: number;
   currency: string;              // e.g. "USD"
   tax_schedule: 'annual' | 'quarterly'; // payment cadence for tax tracker
+  expected_monthly_income: number; // optional retainer / floor income, 0 = not set
   updated_at: string;
 }
 
@@ -102,6 +103,7 @@ export interface SettingsFormData {
   starting_balance: number;
   currency: string;
   tax_schedule: 'annual' | 'quarterly';
+  expected_monthly_income: number;
 }
 
 // ─── Supabase Table Names ─────────────────────────────────────────────────────

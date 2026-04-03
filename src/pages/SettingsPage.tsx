@@ -87,6 +87,7 @@ export function SettingsPage() {
     starting_balance: 0,
     currency: 'USD',
     tax_schedule: 'annual' as 'annual' | 'quarterly',
+    expected_monthly_income: 0,
   });
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
@@ -131,6 +132,7 @@ export function SettingsPage() {
         starting_balance: settings.starting_balance,
         currency: settings.currency,
         tax_schedule: settings.tax_schedule ?? 'annual',
+        expected_monthly_income: settings.expected_monthly_income ?? 0,
       });
     }
   }, [settings]);
@@ -145,6 +147,7 @@ export function SettingsPage() {
         starting_balance: form.starting_balance,
         currency: form.currency,
         tax_schedule: form.tax_schedule,
+        expected_monthly_income: form.expected_monthly_income,
       });
       toast({ title: 'Settings saved', status: 'success', duration: 2000, isClosable: true });
       await refresh();
@@ -318,6 +321,43 @@ export function SettingsPage() {
                 </Select>
               </FormControl>
             </SimpleGrid>
+
+            {/* Expected monthly income — full width below the 2-col grid */}
+            <FormControl mt={4}>
+              <HStack mb={1.5} spacing={1.5} align="center">
+                <FormLabel fontSize="12px" fontWeight="600" color={muted} mb={0}>
+                  Expected Monthly Income
+                </FormLabel>
+                <Tooltip
+                  label={
+                    <Box fontSize="12px" lineHeight="1.6" maxW="220px" p={1}>
+                      <Text fontWeight="700" mb={1}>Optional — acts as a floor</Text>
+                      <Text mb={1}>Set this to your guaranteed retainer or minimum monthly income.</Text>
+                      <Text>When your 6-month average dips below this amount (e.g. after a quiet patch), Spendable uses this value instead — keeping your runway and safe-to-spend realistic.</Text>
+                    </Box>
+                  }
+                  placement="top" hasArrow bg="#1C2B3A" color="white" borderRadius="8px" px={3} py={2}
+                >
+                  <span>
+                    <Icon as={RiInformationLine} color={muted} boxSize="14px" cursor="help" />
+                  </span>
+                </Tooltip>
+              </HStack>
+              <NumberInput
+                value={form.expected_monthly_income} min={0} step={100}
+                onChange={val => setForm(f => ({ ...f, expected_monthly_income: Number(val) }))}
+                maxW="240px"
+              >
+                <NumberInputField {...numInputProps} placeholder="0 — leave blank if variable" />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+              <FormHelperText fontSize="11px" color={muted} mt={1.5}>
+                Set to your retainer or minimum monthly income. Leave at 0 if fully variable.
+              </FormHelperText>
+            </FormControl>
           </SettingSection>
 
           {/* Info */}

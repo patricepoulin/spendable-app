@@ -183,3 +183,11 @@ create index if not exists idx_user_subscriptions_customer
 alter table public.user_settings
   add column if not exists tax_schedule text not null default 'annual'
   check (tax_schedule in ('annual', 'quarterly'));
+
+-- ============================================================
+-- Migration: Recurring / Expected Monthly Income
+-- Safe to run multiple times — uses IF NOT EXISTS
+-- ============================================================
+
+alter table public.user_settings
+  add column if not exists expected_monthly_income numeric not null default 0;

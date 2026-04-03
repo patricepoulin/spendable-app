@@ -1,5 +1,5 @@
 import {
-  Box, HStack, Text, Table, Thead, Tbody, Tr, Th, Td,
+  Box, HStack, Text, Table, Thead, Tbody, Tr, Th, Td, Checkbox,
 } from '@chakra-ui/react';
 import { Fragment } from 'react';
 import { IncomeEntryItem } from './IncomeEntryItem';
@@ -13,6 +13,10 @@ interface Props {
   onAdd: () => void;
   onEdit: (event: IncomeEvent) => void;
   onDelete: (id: string) => void;
+  // bulk select
+  selectedIds: Set<string>;
+  onSelect: (id: string, checked: boolean) => void;
+  bulkMode: boolean;
 }
 
 function fmt(amount: number, currency: string) {
@@ -21,7 +25,10 @@ function fmt(amount: number, currency: string) {
   }).format(amount);
 }
 
-export function IncomeYearGroup({ year, currency, onAdd, onEdit, onDelete }: Props) {
+export function IncomeYearGroup({
+  year, currency, onAdd, onEdit, onDelete,
+  selectedIds, onSelect, bulkMode,
+}: Props) {
   const surface  = '#ffffff';
   const border   = '#e2e8f0';
   const theadBg  = '#f8fafc';
@@ -29,6 +36,15 @@ export function IncomeYearGroup({ year, currency, onAdd, onEdit, onDelete }: Pro
   const rowHover = '#f8fafc';
   const muted    = '#64748b';
   const subtext  = '#94a3b8';
+
+  // All entry IDs in this year (excluding empty-month placeholders)
+  const yearEntries = year.months.flatMap(m => m.entries ?? []);
+  const allSelected = yearEntries.length > 0 && yearEntries.every(e => selectedIds.has(e.id));
+  const someSelected = yearEntries.some(e => selectedIds.has(e.id));
+
+  const handleSelectAll = (checked: boolean) => {
+    yearEntries.forEach(e => onSelect(e.id, checked));
+  };
 
   return (
     <Box>
@@ -49,6 +65,18 @@ export function IncomeYearGroup({ year, currency, onAdd, onEdit, onDelete }: Pro
         <Table variant="simple" size="sm">
           <Thead bg={theadBg}>
             <Tr>
+              {/* Checkbox header */}
+              <Th py={3} w="40px" pr={0} borderColor={border}>
+                <Checkbox
+                  isChecked={allSelected}
+                  isIndeterminate={someSelected && !allSelected}
+                  onChange={e => handleSelectAll(e.target.checked)}
+                  colorScheme="brand"
+                  opacity={bulkMode ? 1 : 0}
+                  pointerEvents={bulkMode ? 'auto' : 'none'}
+                  transition="opacity 0.15s"
+                />
+              </Th>
               {['Source', 'Date', 'Amount', 'Notes', ''].map(h => (
                 <Th
                   key={h} py={3}
@@ -67,7 +95,7 @@ export function IncomeYearGroup({ year, currency, onAdd, onEdit, onDelete }: Pro
                 {/* Month sub-header row */}
                 <Tr key={`month-${month.key}`}>
                   <Td
-                    colSpan={5} py={2} px={4}
+                    colSpan={6} py={2} px={4}
                     borderColor={border}
                     bg={monthBg}
                     borderTop={i > 0 ? '1px solid' : undefined}
@@ -105,6 +133,9 @@ export function IncomeYearGroup({ year, currency, onAdd, onEdit, onDelete }: Pro
                       rowHover={rowHover}
                       onEdit={onEdit}
                       onDelete={onDelete}
+                      selected={selectedIds.has(event.id)}
+                      onSelect={onSelect}
+                      bulkMode={bulkMode}
                     />
                   ))
                 )}

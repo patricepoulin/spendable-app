@@ -51,16 +51,20 @@ export function groupIncomeByMonth(events: IncomeEvent[]): MonthlyIncomeSummary[
 /**
  * Calculates smoothed average monthly income over the last N months.
  * Uses a rolling 6-month window by default.
+ * If expectedMonthlyIncome > 0, it acts as a floor — the result is never
+ * lower than that value (useful for freelancers with a fixed retainer).
  */
 export function calcSmoothedMonthlyIncome(
   events: IncomeEvent[],
-  windowMonths = 6
+  windowMonths = 6,
+  expectedMonthlyIncome = 0
 ): number {
   const monthly = groupIncomeByMonth(events);
   const recent = monthly.slice(-windowMonths);
-  if (recent.length === 0) return 0;
+  if (recent.length === 0) return Math.max(0, expectedMonthlyIncome);
   const total = recent.reduce((sum, m) => sum + m.total, 0);
-  return total / windowMonths; // divide by window (not actual months) for smoothing
+  const smoothed = total / windowMonths; // divide by window (not actual months) for smoothing
+  return expectedMonthlyIncome > 0 ? Math.max(smoothed, expectedMonthlyIncome) : smoothed;
 }
 
 // ─── Reserve Calculations ─────────────────────────────────────────────────────
@@ -202,7 +206,9 @@ export function calcFinancialMetrics(params: {
   const safeToSpend = calcSafeToSpend(currentBalance, taxReserve, emergencyBuffer, upcomingTotal);
   const monthlyRunway = calcRunwayMonths(safeToSpend, monthlyExpenses);
   const weeklySpendAllowance = calcWeeklyAllowance(safeToSpend, monthlyRunway);
-  const smoothedMonthlyIncome = calcSmoothedMonthlyIncome(incomeEvents);
+  const smoothedMonthlyIncome = calcSmoothedMonthlyIncome(
+    incomeEvents, 6, settings.expected_monthly_income ?? 0
+  );
   const incomeMonthsCount = groupIncomeByMonth(incomeEvents).length;
   const confidenceScore = calcConfidenceScore({
     runwayMonths: monthlyRunway,

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Supabase Edge Function: customer-portal
  *
@@ -16,8 +17,7 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req: Request) => {
@@ -31,13 +31,10 @@ serve(async (req: Request) => {
     const supabaseUser = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } },
+      { global: { headers: { Authorization: authHeader } } }
     );
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseUser.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
     if (authError || !user) throw new Error('Unauthorized');
 
     const userId = user.id;
@@ -49,7 +46,7 @@ serve(async (req: Request) => {
     );
 
     // ── 3. Parse body ───────────────────────────────────────────────────────
-    const { returnUrl } = await req.json();
+    const { returnUrl, flow } = await req.json();
 
     // ── 4. Look up Stripe customer ──────────────────────────────────────────
     const { data: sub } = await supabaseAdmin
@@ -61,17 +58,24 @@ serve(async (req: Request) => {
     if (!sub?.stripe_customer_id) throw new Error('No Stripe customer found');
 
     // ── 5. Create Portal session ────────────────────────────────────────────
-    const session = await stripe.billingPortal.sessions.create({
-      customer: sub.stripe_customer_id,
+    const sessionParams: Record<string, unknown> = {
+      customer:   sub.stripe_customer_id,
       return_url: returnUrl,
-    });
+    };
+
+    // If a specific flow is requested (e.g. payment_method_update), land there directly
+    if (flow === 'payment_method_update') {
+      sessionParams.flow_data = { type: 'payment_method_update' };
+    }
+
+    const session = await stripe.billingPortal.sessions.create(sessionParams as any);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   } catch (err) {
     const message = (err as Error).message;
-    const status = message === 'Unauthorized' ? 401 : 400;
+    const status  = message === 'Unauthorized' ? 401 : 400;
     return new Response(JSON.stringify({ message }), {
       status,
       headers: { ...CORS, 'Content-Type': 'application/json' },
