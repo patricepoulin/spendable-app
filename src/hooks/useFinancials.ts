@@ -1,6 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from './useAuth';
-import { incomeApi, expensesApi, upcomingApi, settingsApi, IS_MOCK } from '../lib/supabase';
+import {
+  incomeApi,
+  expensesApi,
+  upcomingApi,
+  settingsApi,
+  IS_MOCK,
+} from '../lib/supabase';
 import { calcFinancialMetrics } from '../utils/calculations';
 import type {
   IncomeEvent,
@@ -11,17 +17,17 @@ import type {
 } from '../types';
 
 interface UseFinancialsReturn {
-  metrics:    FinancialMetrics | null;
-  income:     IncomeEvent[];
-  expenses:   RecurringExpense[];
-  upcoming:   UpcomingExpense[];
-  settings:   UserSettings | null;
-  loading:    boolean;
-  initialLoad: boolean;   // true only on the very first mount before any data (cached or live) arrives
-  error:      string | null;
-  liveFailedWithCache:  boolean;      // true only when live fetch actually failed and cache is being served
-  lastUpdated:  Date | null;   // timestamp of the last successful live fetch
-  refresh:      () => Promise<void>;
+  metrics: FinancialMetrics | null;
+  income: IncomeEvent[];
+  expenses: RecurringExpense[];
+  upcoming: UpcomingExpense[];
+  settings: UserSettings | null;
+  loading: boolean;
+  initialLoad: boolean; // true only on the very first mount before any data (cached or live) arrives
+  error: string | null;
+  liveFailedWithCache: boolean; // true only when live fetch actually failed and cache is being served
+  lastUpdated: Date | null; // timestamp of the last successful live fetch
+  refresh: () => Promise<void>;
 }
 
 const CACHE_KEY = 'spendable_financials_cache';
@@ -32,10 +38,14 @@ const CACHE_KEY = 'spendable_financials_cache';
 const INCOME_WINDOW_MONTHS = 12;
 
 const DEFAULT_SETTINGS: UserSettings = {
-  id: '', user_id: '',
-  tax_rate: 0.25, emergency_buffer_months: 3,
-  starting_balance: 0, currency: 'USD',
+  id: '',
+  user_id: '',
+  tax_rate: 0.25,
+  emergency_buffer_months: 3,
+  starting_balance: 0,
+  currency: 'USD',
   tax_schedule: 'annual',
+  expected_monthly_income: 0,
   updated_at: new Date().toISOString(),
 };
 
@@ -49,7 +59,9 @@ function saveCache(data: {
 }) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-  } catch { /* storage full — ignore */ }
+  } catch {
+    /* storage full — ignore */
+  }
 }
 
 function loadCache(): {
@@ -77,15 +89,15 @@ function monthsAgoIso(n: number): string {
 
 export function useFinancials(): UseFinancialsReturn {
   const { user } = useAuth();
-  const [income,   setIncome]   = useState<IncomeEvent[]>([]);
+  const [income, setIncome] = useState<IncomeEvent[]>([]);
   const [expenses, setExpenses] = useState<RecurringExpense[]>([]);
   const [upcoming, setUpcoming] = useState<UpcomingExpense[]>([]);
   const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [loading,  setLoading]  = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);  // cleared once data first arrives
-  const [error,    setError]    = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true); // cleared once data first arrives
+  const [error, setError] = useState<string | null>(null);
   const [liveFailedWithCache, setLiveFailedWithCache] = useState(false);
-  const [lastUpdated,  setLastUpdated]  = useState<Date | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) return;
@@ -115,7 +127,12 @@ export function useFinancials(): UseFinancialsReturn {
 
       // Persist to cache for offline use (skip in mock mode — mock has its own store)
       if (!IS_MOCK) {
-        saveCache({ income: inc, expenses: exp, upcoming: upc, settings: resolvedSettings });
+        saveCache({
+          income: inc,
+          expenses: exp,
+          upcoming: upc,
+          settings: resolvedSettings,
+        });
       }
     } catch (e) {
       // Network error — try to serve from cache
@@ -157,31 +174,53 @@ export function useFinancials(): UseFinancialsReturn {
   const currentBalance = (() => {
     const totalIncome = income.reduce((sum, e) => sum + e.amount, 0);
     const monthlyExpTotal = expenses
-      .filter(e => e.is_active)
+      .filter((e) => e.is_active)
       .reduce((sum, e) => {
-        if (e.frequency === 'monthly')    return sum + e.amount;
-        if (e.frequency === 'weekly')     return sum + e.amount * 4;
-        if (e.frequency === 'quarterly')  return sum + e.amount / 3;
-        if (e.frequency === 'annually')   return sum + e.amount / 12;
+        if (e.frequency === 'monthly') return sum + e.amount;
+        if (e.frequency === 'weekly') return sum + e.amount * 4;
+        if (e.frequency === 'quarterly') return sum + e.amount / 3;
+        if (e.frequency === 'annually') return sum + e.amount / 12;
         return sum;
       }, 0);
     const now = new Date();
-    const months = income.length > 0
-      ? Math.max(1, Math.ceil((now.getTime() - new Date(income[income.length - 1]?.date ?? now).getTime()) / (30 * 24 * 3600 * 1000)))
-      : 1;
-    return resolvedSettings.starting_balance + totalIncome - (monthlyExpTotal * months);
+    const months =
+      income.length > 0
+        ? Math.max(
+            1,
+            Math.ceil(
+              (now.getTime() -
+                new Date(income[income.length - 1]?.date ?? now).getTime()) /
+                (30 * 24 * 3600 * 1000),
+            ),
+          )
+        : 1;
+    return (
+      resolvedSettings.starting_balance + totalIncome - monthlyExpTotal * months
+    );
   })();
 
   const metrics: FinancialMetrics | null =
     settings === null && income.length === 0 && expenses.length === 0
       ? null
       : calcFinancialMetrics({
-          currentBalance:    Math.max(0, currentBalance),
-          incomeEvents:      income,
+          currentBalance: Math.max(0, currentBalance),
+          incomeEvents: income,
           recurringExpenses: expenses,
-          upcomingExpenses:  upcoming,
-          settings:          resolvedSettings,
+          upcomingExpenses: upcoming,
+          settings: resolvedSettings,
         });
 
-  return { metrics, income, expenses, upcoming, settings, loading, initialLoad, error, liveFailedWithCache, lastUpdated, refresh };
+  return {
+    metrics,
+    income,
+    expenses,
+    upcoming,
+    settings,
+    loading,
+    initialLoad,
+    error,
+    liveFailedWithCache,
+    lastUpdated,
+    refresh,
+  };
 }

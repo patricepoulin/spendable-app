@@ -23,12 +23,12 @@ import type {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const MOCK_USER_ID = 'mock-user-offline-001';
-const STORAGE_KEY  = 'spendable_mock_store';
+const STORAGE_KEY = 'spendable_mock_store';
 
 function uuid(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
   });
 }
 
@@ -54,33 +54,202 @@ const SEED_SETTINGS: UserSettings = {
   starting_balance: 18500,
   currency: 'USD',
   tax_schedule: 'annual',
+  expected_monthly_income: 0,
   updated_at: new Date().toISOString(),
 };
 
 const SEED_INCOME: IncomeEvent[] = [
-  { id: uuid(), user_id: MOCK_USER_ID, amount: 8400,  date: today(-5),         source: 'Client Project',   notes: 'Acme Corp — Q4 design sprint',    created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, amount: 3200,  date: monthsAgo(1),      source: 'Consulting',       notes: 'Strategy session x4',              created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, amount: 5900,  date: monthsAgo(1),      source: 'Freelance Contract',notes: 'Frontend build — startup client',  created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, amount: 1200,  date: monthsAgo(2),      source: 'Royalty',          notes: 'Plugin sales — Sept',              created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, amount: 9800,  date: monthsAgo(2),      source: 'Client Project',   notes: 'Full brand identity project',      created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, amount: 4100,  date: monthsAgo(3),      source: 'Freelance Contract',notes: 'React component library',          created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, amount: 2600,  date: monthsAgo(3),      source: 'Consulting',       notes: 'Tech audit',                       created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, amount: 7200,  date: monthsAgo(4),      source: 'Client Project',   notes: 'E-commerce redesign',              created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, amount: 950,   date: monthsAgo(4),      source: 'Product Sale',     notes: 'Template pack launch',             created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, amount: 5500,  date: monthsAgo(5),      source: 'Client Project',   notes: 'Mobile app UI',                    created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, amount: 3800,  date: monthsAgo(5),      source: 'Freelance Contract',notes: 'API integration work',             created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, amount: 6100,  date: monthsAgo(6),      source: 'Client Project',   notes: 'SaaS dashboard build',             created_at: new Date().toISOString() },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    amount: 8400,
+    date: today(-5),
+    source: 'Client Project',
+    notes: 'Acme Corp — Q4 design sprint',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    amount: 3200,
+    date: monthsAgo(1),
+    source: 'Consulting',
+    notes: 'Strategy session x4',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    amount: 5900,
+    date: monthsAgo(1),
+    source: 'Freelance Contract',
+    notes: 'Frontend build — startup client',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    amount: 1200,
+    date: monthsAgo(2),
+    source: 'Royalty',
+    notes: 'Plugin sales — Sept',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    amount: 9800,
+    date: monthsAgo(2),
+    source: 'Client Project',
+    notes: 'Full brand identity project',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    amount: 4100,
+    date: monthsAgo(3),
+    source: 'Freelance Contract',
+    notes: 'React component library',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    amount: 2600,
+    date: monthsAgo(3),
+    source: 'Consulting',
+    notes: 'Tech audit',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    amount: 7200,
+    date: monthsAgo(4),
+    source: 'Client Project',
+    notes: 'E-commerce redesign',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    amount: 950,
+    date: monthsAgo(4),
+    source: 'Product Sale',
+    notes: 'Template pack launch',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    amount: 5500,
+    date: monthsAgo(5),
+    source: 'Client Project',
+    notes: 'Mobile app UI',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    amount: 3800,
+    date: monthsAgo(5),
+    source: 'Freelance Contract',
+    notes: 'API integration work',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    amount: 6100,
+    date: monthsAgo(6),
+    source: 'Client Project',
+    notes: 'SaaS dashboard build',
+    created_at: new Date().toISOString(),
+  },
 ];
 
 const SEED_EXPENSES: RecurringExpense[] = [
-  { id: uuid(), user_id: MOCK_USER_ID, name: 'Rent',             amount: 2200,  frequency: 'monthly',   category: 'housing',       is_active: true,  created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, name: 'Health Insurance', amount: 380,   frequency: 'monthly',   category: 'health',        is_active: true,  created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, name: 'Internet',         amount: 80,    frequency: 'monthly',   category: 'software',      is_active: true,  created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, name: 'Figma',            amount: 15,    frequency: 'monthly',   category: 'software',      is_active: true,  created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, name: 'GitHub',           amount: 4,     frequency: 'monthly',   category: 'software',      is_active: true,  created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, name: 'Car Insurance',    amount: 1400,  frequency: 'annually',  category: 'insurance',     is_active: true,  created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, name: 'Gym',              amount: 55,    frequency: 'monthly',   category: 'health',        is_active: true,  created_at: new Date().toISOString() },
-  { id: uuid(), user_id: MOCK_USER_ID, name: 'Netflix',          amount: 18,    frequency: 'monthly',   category: 'entertainment', is_active: false, created_at: new Date().toISOString() },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    name: 'Rent',
+    amount: 2200,
+    frequency: 'monthly',
+    category: 'housing',
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    name: 'Health Insurance',
+    amount: 380,
+    frequency: 'monthly',
+    category: 'health',
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    name: 'Internet',
+    amount: 80,
+    frequency: 'monthly',
+    category: 'software',
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    name: 'Figma',
+    amount: 15,
+    frequency: 'monthly',
+    category: 'software',
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    name: 'GitHub',
+    amount: 4,
+    frequency: 'monthly',
+    category: 'software',
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    name: 'Car Insurance',
+    amount: 1400,
+    frequency: 'annually',
+    category: 'insurance',
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    name: 'Gym',
+    amount: 55,
+    frequency: 'monthly',
+    category: 'health',
+    is_active: true,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: uuid(),
+    user_id: MOCK_USER_ID,
+    name: 'Netflix',
+    amount: 18,
+    frequency: 'monthly',
+    category: 'entertainment',
+    is_active: false,
+    created_at: new Date().toISOString(),
+  },
 ];
 
 const SEED_UPCOMING: UpcomingExpense[] = [];
@@ -100,10 +269,12 @@ function loadStore(): StoreShape {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw) as StoreShape;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return {
     settings: SEED_SETTINGS,
-    income:   [...SEED_INCOME],
+    income: [...SEED_INCOME],
     expenses: [...SEED_EXPENSES],
     upcoming: [...SEED_UPCOMING],
   };
@@ -112,13 +283,17 @@ function loadStore(): StoreShape {
 function saveStore(store: StoreShape): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-  } catch { /* storage full — ignore */ }
+  } catch {
+    /* storage full — ignore */
+  }
 }
 
 // Mutable store object — loaded once on import
 const store: StoreShape = loadStore();
 
-function persist() { saveStore(store); }
+function persist() {
+  saveStore(store);
+}
 
 // ─── Mock Auth ────────────────────────────────────────────────────────────────
 
@@ -161,6 +336,7 @@ export const mockSettingsApi = {
       starting_balance: 0,
       currency: 'USD',
       tax_schedule: 'annual',
+      expected_monthly_income: 0,
     };
   },
 };
@@ -170,7 +346,7 @@ export const mockSettingsApi = {
 export const mockIncomeApi = {
   async list(_userId: string): Promise<IncomeEvent[]> {
     return [...store.income].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
   },
 
@@ -187,7 +363,7 @@ export const mockIncomeApi = {
   },
 
   async update(id: string, form: IncomeFormData): Promise<IncomeEvent> {
-    const idx = store.income.findIndex(e => e.id === id);
+    const idx = store.income.findIndex((e) => e.id === id);
     if (idx === -1) throw new Error('Income event not found');
     store.income[idx] = { ...store.income[idx], ...form };
     persist();
@@ -195,20 +371,26 @@ export const mockIncomeApi = {
   },
 
   async delete(id: string): Promise<void> {
-    store.income = store.income.filter(e => e.id !== id);
+    store.income = store.income.filter((e) => e.id !== id);
     persist();
   },
 
   async batchInsert(
-    rows: Array<{ user_id: string; date: string; source: string; amount: number; notes: string }>,
+    rows: Array<{
+      user_id: string;
+      date: string;
+      source: string;
+      amount: number;
+      notes: string;
+    }>,
   ): Promise<number> {
-    const events = rows.map(r => ({
-      id:         uuid(),
-      user_id:    MOCK_USER_ID,
-      date:       r.date,
-      source:     r.source,
-      amount:     r.amount,
-      notes:      r.notes ?? '',
+    const events = rows.map((r) => ({
+      id: uuid(),
+      user_id: MOCK_USER_ID,
+      date: r.date,
+      source: r.source,
+      amount: r.amount,
+      notes: r.notes ?? '',
       created_at: new Date().toISOString(),
     }));
     store.income.unshift(...events);
@@ -222,11 +404,15 @@ export const mockIncomeApi = {
 export const mockExpensesApi = {
   async list(_userId: string): Promise<RecurringExpense[]> {
     return [...store.expenses].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
   },
 
-  async create(_userId: string, form: ExpenseFormData): Promise<RecurringExpense> {
+  async create(
+    _userId: string,
+    form: ExpenseFormData,
+  ): Promise<RecurringExpense> {
     const expense: RecurringExpense = {
       id: uuid(),
       user_id: MOCK_USER_ID,
@@ -239,8 +425,11 @@ export const mockExpensesApi = {
     return { ...expense };
   },
 
-  async update(id: string, updates: Partial<RecurringExpense>): Promise<RecurringExpense> {
-    const idx = store.expenses.findIndex(e => e.id === id);
+  async update(
+    id: string,
+    updates: Partial<RecurringExpense>,
+  ): Promise<RecurringExpense> {
+    const idx = store.expenses.findIndex((e) => e.id === id);
     if (idx === -1) throw new Error('Expense not found');
     store.expenses[idx] = { ...store.expenses[idx], ...updates };
     persist();
@@ -248,7 +437,7 @@ export const mockExpensesApi = {
   },
 
   async delete(id: string): Promise<void> {
-    store.expenses = store.expenses.filter(e => e.id !== id);
+    store.expenses = store.expenses.filter((e) => e.id !== id);
     persist();
   },
 };
@@ -258,27 +447,33 @@ export const mockExpensesApi = {
 export const mockUpcomingApi = {
   async list(_userId: string): Promise<UpcomingExpense[]> {
     return [...store.upcoming].sort(
-      (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+      (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
     );
   },
 
   async markPaid(id: string): Promise<void> {
-    const idx = store.upcoming.findIndex(e => e.id === id);
+    const idx = store.upcoming.findIndex((e) => e.id === id);
     if (idx !== -1) {
       store.upcoming[idx].is_paid = true;
       persist();
     }
   },
 
-  async update(id: string, data: { name: string; amount: number; due_date: string }): Promise<void> {
-    const idx = store.upcoming.findIndex(e => e.id === id);
+  async update(
+    id: string,
+    data: { name: string; amount: number; due_date: string },
+  ): Promise<void> {
+    const idx = store.upcoming.findIndex((e) => e.id === id);
     if (idx !== -1) {
       store.upcoming[idx] = { ...store.upcoming[idx], ...data };
       persist();
     }
   },
 
-  async create(_userId: string, data: { name: string; amount: number; due_date: string }): Promise<void> {
+  async create(
+    _userId: string,
+    data: { name: string; amount: number; due_date: string },
+  ): Promise<void> {
     store.upcoming.push({
       id: `upcoming-${Date.now()}`,
       user_id: _userId,
@@ -292,7 +487,7 @@ export const mockUpcomingApi = {
   },
 
   async delete(id: string): Promise<void> {
-    store.upcoming = store.upcoming.filter(e => e.id !== id);
+    store.upcoming = store.upcoming.filter((e) => e.id !== id);
     persist();
   },
 };
@@ -303,13 +498,13 @@ export const mockSubscriptionApi = {
   async get(_userId: string): Promise<UserSubscription | null> {
     // In mock mode there is no Stripe, so always return a free-plan record.
     return {
-      id:                              'mock-sub-001',
-      user_id:                         _userId,
-      stripe_customer_id:              null,
-      subscription_plan:               'free',
-      subscription_status:             null,
+      id: 'mock-sub-001',
+      user_id: _userId,
+      stripe_customer_id: null,
+      subscription_plan: 'free',
+      subscription_status: null,
       subscription_current_period_end: null,
-      updated_at:                      new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     } as unknown as UserSubscription;
   },
 };
@@ -319,7 +514,7 @@ export const mockSubscriptionApi = {
 export function resetMockStore(): void {
   localStorage.removeItem(STORAGE_KEY);
   store.settings = { ...SEED_SETTINGS };
-  store.income   = [...SEED_INCOME];
+  store.income = [...SEED_INCOME];
   store.expenses = [...SEED_EXPENSES];
   store.upcoming = [...SEED_UPCOMING];
 }

@@ -8,12 +8,24 @@
 
 import { createClient } from '@supabase/supabase-js';
 import type {
-  UserSettings, IncomeEvent, RecurringExpense,
-  UpcomingExpense, IncomeFormData, ExpenseFormData, SettingsFormData,
-  UserSubscription, SubscriptionPlan, SubscriptionStatus,
+  UserSettings,
+  IncomeEvent,
+  RecurringExpense,
+  UpcomingExpense,
+  IncomeFormData,
+  ExpenseFormData,
+  SettingsFormData,
+  UserSubscription,
+  SubscriptionPlan,
+  SubscriptionStatus,
 } from '../types';
 import {
-  mockSettingsApi, mockIncomeApi, mockExpensesApi, mockUpcomingApi, mockAuth, mockSubscriptionApi,
+  mockSettingsApi,
+  mockIncomeApi,
+  mockExpensesApi,
+  mockUpcomingApi,
+  mockAuth,
+  mockSubscriptionApi,
 } from './mockStore';
 
 // ─── Mode flag ────────────────────────────────────────────────────────────────
@@ -22,8 +34,7 @@ import {
 // In production builds (import.meta.env.PROD), mock mode is always disabled
 // regardless of the env var, preventing accidental activation.
 export const IS_MOCK =
-  !import.meta.env.PROD &&
-  import.meta.env.VITE_MOCK_AUTH === 'true';
+  !import.meta.env.PROD && import.meta.env.VITE_MOCK_AUTH === 'true';
 
 // ─── Supabase client (lazy — only used when IS_MOCK is false) ─────────────────
 
@@ -58,10 +69,7 @@ export const auth = {
       ? mockAuth.signUp(email, password)
       : sb().auth.signUp({ email, password }),
 
-  signOut: () =>
-    IS_MOCK
-      ? mockAuth.signOut()
-      : sb().auth.signOut(),
+  signOut: () => (IS_MOCK ? mockAuth.signOut() : sb().auth.signOut()),
 
   getSession: () =>
     IS_MOCK
@@ -75,26 +83,40 @@ export const settingsApi = {
   async get(userId: string): Promise<UserSettings | null> {
     if (IS_MOCK) return mockSettingsApi.get(userId);
     const { data, error } = await sb()
-      .from('user_settings').select('*').eq('user_id', userId).single();
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
     if (error) return null;
     return data as UserSettings;
   },
 
-  async upsert(userId: string, settings: SettingsFormData): Promise<UserSettings> {
+  async upsert(
+    userId: string,
+    settings: SettingsFormData,
+  ): Promise<UserSettings> {
     if (IS_MOCK) return mockSettingsApi.upsert(userId, settings);
     const { data, error } = await sb()
       .from('user_settings')
       .upsert(
         { user_id: userId, ...settings, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
+        { onConflict: 'user_id' },
       )
-      .select().single();
+      .select()
+      .single();
     if (error) throw error;
     return data as UserSettings;
   },
 
   defaults(): SettingsFormData {
-    return { tax_rate: 0.25, emergency_buffer_months: 3, starting_balance: 0, currency: 'USD', tax_schedule: 'annual' };
+    return {
+      tax_rate: 0.25,
+      emergency_buffer_months: 3,
+      starting_balance: 0,
+      currency: 'USD',
+      tax_schedule: 'annual',
+      expected_monthly_income: 0,
+    };
   },
 };
 
@@ -104,14 +126,19 @@ export const incomeApi = {
   async list(userId: string): Promise<IncomeEvent[]> {
     if (IS_MOCK) return mockIncomeApi.list(userId);
     const { data, error } = await sb()
-      .from('income_events').select('*').eq('user_id', userId)
+      .from('income_events')
+      .select('*')
+      .eq('user_id', userId)
       .order('date', { ascending: false });
     if (error) throw error;
     return (data ?? []) as IncomeEvent[];
   },
 
   /** Fetches income events from a start date (inclusive) to today, newest first. */
-  async listByDateRange(userId: string, fromDate: string): Promise<IncomeEvent[]> {
+  async listByDateRange(
+    userId: string,
+    fromDate: string,
+  ): Promise<IncomeEvent[]> {
     if (IS_MOCK) return mockIncomeApi.list(userId);
     const { data, error } = await sb()
       .from('income_events')
@@ -127,7 +154,9 @@ export const incomeApi = {
   async listYears(userId: string): Promise<number[]> {
     if (IS_MOCK) {
       const all = await mockIncomeApi.list(userId);
-      const years = [...new Set(all.map(e => new Date(e.date).getFullYear()))];
+      const years = [
+        ...new Set(all.map((e) => new Date(e.date).getFullYear())),
+      ];
       return years.sort((a, b) => b - a);
     }
     const { data, error } = await sb()
@@ -136,7 +165,9 @@ export const incomeApi = {
       .eq('user_id', userId)
       .order('date', { ascending: false });
     if (error) throw error;
-    const years = [...new Set((data ?? []).map(r => new Date(r.date).getFullYear()))];
+    const years = [
+      ...new Set((data ?? []).map((r) => new Date(r.date).getFullYear())),
+    ];
     return years.sort((a, b) => b - a);
   },
 
@@ -144,7 +175,7 @@ export const incomeApi = {
   async listByYear(userId: string, year: number): Promise<IncomeEvent[]> {
     if (IS_MOCK) {
       const all = await mockIncomeApi.list(userId);
-      return all.filter(e => new Date(e.date).getFullYear() === year);
+      return all.filter((e) => new Date(e.date).getFullYear() === year);
     }
     const { data, error } = await sb()
       .from('income_events')
@@ -160,7 +191,10 @@ export const incomeApi = {
   async create(userId: string, form: IncomeFormData): Promise<IncomeEvent> {
     if (IS_MOCK) return mockIncomeApi.create(userId, form);
     const { data, error } = await sb()
-      .from('income_events').insert({ user_id: userId, ...form }).select().single();
+      .from('income_events')
+      .insert({ user_id: userId, ...form })
+      .select()
+      .single();
     if (error) throw error;
     return data as IncomeEvent;
   },
@@ -168,9 +202,13 @@ export const incomeApi = {
   async update(id: string, form: IncomeFormData): Promise<IncomeEvent> {
     if (IS_MOCK) return mockIncomeApi.update(id, form);
     const { data, error } = await sb()
-      .from('income_events').update(form).eq('id', id).select();
+      .from('income_events')
+      .update(form)
+      .eq('id', id)
+      .select();
     if (error) throw error;
-    if (!data || data.length === 0) throw new Error('Update returned no rows — check RLS policies');
+    if (!data || data.length === 0)
+      throw new Error('Update returned no rows — check RLS policies');
     return data[0] as IncomeEvent;
   },
 
@@ -191,7 +229,13 @@ export const incomeApi = {
   },
 
   async batchInsert(
-    rows: Array<{ user_id: string; date: string; source: string; amount: number; notes: string }>,
+    rows: Array<{
+      user_id: string;
+      date: string;
+      source: string;
+      amount: number;
+      notes: string;
+    }>,
   ): Promise<number> {
     if (IS_MOCK) return mockIncomeApi.batchInsert(rows);
     const { data, error } = await sb()
@@ -209,33 +253,50 @@ export const expensesApi = {
   async list(userId: string): Promise<RecurringExpense[]> {
     if (IS_MOCK) return mockExpensesApi.list(userId);
     const { data, error } = await sb()
-      .from('recurring_expenses').select('*').eq('user_id', userId)
+      .from('recurring_expenses')
+      .select('*')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
     return (data ?? []) as RecurringExpense[];
   },
 
-  async create(userId: string, form: ExpenseFormData): Promise<RecurringExpense> {
+  async create(
+    userId: string,
+    form: ExpenseFormData,
+  ): Promise<RecurringExpense> {
     if (IS_MOCK) return mockExpensesApi.create(userId, form);
     const { data, error } = await sb()
       .from('recurring_expenses')
-      .insert({ user_id: userId, ...form, is_active: true }).select().single();
+      .insert({ user_id: userId, ...form, is_active: true })
+      .select()
+      .single();
     if (error) throw error;
     return data as RecurringExpense;
   },
 
-  async update(id: string, updates: Partial<RecurringExpense>): Promise<RecurringExpense> {
+  async update(
+    id: string,
+    updates: Partial<RecurringExpense>,
+  ): Promise<RecurringExpense> {
     if (IS_MOCK) return mockExpensesApi.update(id, updates);
     const { data, error } = await sb()
-      .from('recurring_expenses').update(updates).eq('id', id).select();
+      .from('recurring_expenses')
+      .update(updates)
+      .eq('id', id)
+      .select();
     if (error) throw error;
-    if (!data || data.length === 0) throw new Error('Update returned no rows — check RLS policies');
+    if (!data || data.length === 0)
+      throw new Error('Update returned no rows — check RLS policies');
     return data[0] as RecurringExpense;
   },
 
   async delete(id: string): Promise<void> {
     if (IS_MOCK) return mockExpensesApi.delete(id);
-    const { error } = await sb().from('recurring_expenses').delete().eq('id', id);
+    const { error } = await sb()
+      .from('recurring_expenses')
+      .delete()
+      .eq('id', id);
     if (error) throw error;
   },
 };
@@ -246,7 +307,9 @@ export const upcomingApi = {
   async list(userId: string): Promise<UpcomingExpense[]> {
     if (IS_MOCK) return mockUpcomingApi.list(userId);
     const { data, error } = await sb()
-      .from('upcoming_expenses').select('*').eq('user_id', userId)
+      .from('upcoming_expenses')
+      .select('*')
+      .eq('user_id', userId)
       .order('due_date', { ascending: true });
     if (error) throw error;
     return (data ?? []) as UpcomingExpense[];
@@ -255,28 +318,41 @@ export const upcomingApi = {
   async markPaid(id: string): Promise<void> {
     if (IS_MOCK) return mockUpcomingApi.markPaid(id);
     const { error } = await sb()
-      .from('upcoming_expenses').update({ is_paid: true }).eq('id', id);
+      .from('upcoming_expenses')
+      .update({ is_paid: true })
+      .eq('id', id);
     if (error) throw error;
   },
 
-  async update(id: string, data: { name: string; amount: number; due_date: string }): Promise<void> {
+  async update(
+    id: string,
+    data: { name: string; amount: number; due_date: string },
+  ): Promise<void> {
     if (IS_MOCK) return mockUpcomingApi.update(id, data);
     const { error } = await sb()
-      .from('upcoming_expenses').update(data).eq('id', id);
+      .from('upcoming_expenses')
+      .update(data)
+      .eq('id', id);
     if (error) throw error;
   },
 
-  async create(userId: string, data: { name: string; amount: number; due_date: string }): Promise<void> {
+  async create(
+    userId: string,
+    data: { name: string; amount: number; due_date: string },
+  ): Promise<void> {
     if (IS_MOCK) return mockUpcomingApi.create(userId, data);
     const { error } = await sb()
-      .from('upcoming_expenses').insert({ user_id: userId, ...data, is_paid: false });
+      .from('upcoming_expenses')
+      .insert({ user_id: userId, ...data, is_paid: false });
     if (error) throw error;
   },
 
   async delete(id: string): Promise<void> {
     if (IS_MOCK) return mockUpcomingApi.delete(id);
     const { error } = await sb()
-      .from('upcoming_expenses').delete().eq('id', id);
+      .from('upcoming_expenses')
+      .delete()
+      .eq('id', id);
     if (error) throw error;
   },
 };
@@ -287,17 +363,22 @@ export const subscriptionApi = {
   async get(userId: string): Promise<UserSubscription | null> {
     if (IS_MOCK) return mockSubscriptionApi.get(userId);
     const { data, error } = await sb()
-      .from('user_subscriptions').select('*').eq('user_id', userId).single();
+      .from('user_subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
     if (error && error.code !== 'PGRST116') throw error;
     return (data as UserSubscription) ?? null;
   },
 
   async upsertFree(userId: string): Promise<void> {
     if (IS_MOCK) return;
-    const { error } = await sb().from('user_subscriptions').upsert(
-      { user_id: userId, subscription_plan: 'free' },
-      { onConflict: 'user_id' }
-    );
+    const { error } = await sb()
+      .from('user_subscriptions')
+      .upsert(
+        { user_id: userId, subscription_plan: 'free' },
+        { onConflict: 'user_id' },
+      );
     if (error) throw error;
   },
 };
