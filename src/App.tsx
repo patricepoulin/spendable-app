@@ -16,7 +16,7 @@ import { UpcomingPage } from './pages/UpcomingPage';
 import { TaxTrackerPage } from './pages/TaxTrackerPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
-import { NotFoundPage } from './pages/NotFoundPage';
+// import { NotFoundPage } from './pages/NotFoundPage';
 
 // ─── Chakra Theme ─────────────────────────────────────────────────────────────
 
@@ -43,12 +43,12 @@ const theme = extendTheme({
   colors: {
     // YNAB indigo-blue primary
     brand: {
-      50:  '#eef0fb',
+      50: '#eef0fb',
       100: '#d5d9f5',
       200: '#adb4ec',
       300: '#8590e2',
       400: '#6270d9',
-      500: '#4C5FD5',  // ← YNAB primary blue
+      500: '#4C5FD5', // ← YNAB primary blue
       600: '#3D4FBF',
       700: '#2e3d99',
       800: '#222e72',
@@ -57,48 +57,48 @@ const theme = extendTheme({
     // YNAB navy (sidebar)
     navy: {
       700: '#253344',
-      800: '#1C2B3A',  // ← YNAB sidebar bg
+      800: '#1C2B3A', // ← YNAB sidebar bg
       900: '#141f2b',
     },
     // YNAB positive green
     ynabGreen: {
-      50:  '#eafaf1',
+      50: '#eafaf1',
       100: '#d5f5e3',
-      500: '#27AE60',  // ← YNAB "in the green"
+      500: '#27AE60', // ← YNAB "in the green"
       600: '#219653',
       700: '#1a7a43',
     },
     // YNAB caution amber
     ynabAmber: {
-      50:  '#fefae8',
+      50: '#fefae8',
       100: '#fdf3c0',
-      500: '#F2C94C',  // ← YNAB underfunded amber
+      500: '#F2C94C', // ← YNAB underfunded amber
       600: '#d4a800',
     },
     // YNAB overspent red
     ynabRed: {
-      50:  '#fef2f2',
+      50: '#fef2f2',
       100: '#fde0e0',
-      500: '#EB5757',  // ← YNAB overspent red
+      500: '#EB5757', // ← YNAB overspent red
       600: '#c93c3c',
     },
   },
   semanticTokens: {
     colors: {
       // Surfaces
-      'page-bg':   { default: '#F5F4EF', _dark: '#141f2b' },  // YNAB warm off-white
-      'surface':   { default: '#FFFFFF', _dark: '#1C2B3A'  },
-      'surface-2': { default: '#F0EFE9', _dark: '#253344'  },
-      'border':    { default: '#E8E8E3', _dark: '#2d3e50'  },
+      'page-bg': { default: '#F5F4EF', _dark: '#141f2b' }, // YNAB warm off-white
+      surface: { default: '#FFFFFF', _dark: '#1C2B3A' },
+      'surface-2': { default: '#F0EFE9', _dark: '#253344' },
+      border: { default: '#E8E8E3', _dark: '#2d3e50' },
       // Text
-      'text-primary':   { default: '#1C2B3A', _dark: '#f0f0ea' },
+      'text-primary': { default: '#1C2B3A', _dark: '#f0f0ea' },
       'text-secondary': { default: '#5a6a7a', _dark: '#a0aeba' },
-      'text-muted':     { default: '#8a9aaa', _dark: '#6a7a8a' },
+      'text-muted': { default: '#8a9aaa', _dark: '#6a7a8a' },
       // Semantic
       'color-positive': { default: '#27AE60', _dark: '#4eca80' },
-      'color-caution':  { default: '#D4A800', _dark: '#F2C94C' },
+      'color-caution': { default: '#D4A800', _dark: '#F2C94C' },
       'color-negative': { default: '#EB5757', _dark: '#f07070' },
-      'color-brand':    { default: '#4C5FD5', _dark: '#7b8fec' },
+      'color-brand': { default: '#4C5FD5', _dark: '#7b8fec' },
     },
   },
   components: {
@@ -106,12 +106,14 @@ const theme = extendTheme({
       baseStyle: { fontWeight: '600', borderRadius: '8px' },
       variants: {
         solid: (props: { colorScheme: string }) => ({
-          ...(props.colorScheme === 'brand' ? {
-            bg: '#4C5FD5',
-            color: 'white',
-            _hover: { bg: '#3D4FBF' },
-            _active: { bg: '#2e3d99' },
-          } : {}),
+          ...(props.colorScheme === 'brand'
+            ? {
+                bg: '#4C5FD5',
+                color: 'white',
+                _hover: { bg: '#3D4FBF' },
+                _active: { bg: '#2e3d99' },
+              }
+            : {}),
         }),
       },
     },
@@ -160,8 +162,8 @@ function AppRoutes() {
 
   if (loading) {
     return (
-      <Center h="100vh">
-        <Spinner size="lg" color="brand.500" />
+      <Center h='100vh'>
+        <Spinner size='lg' color='brand.500' />
       </Center>
     );
   }
@@ -169,10 +171,10 @@ function AppRoutes() {
   if (!user) {
     return (
       <Routes>
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="*" element={<NotFoundPage />} />
+        <Route path='/auth' element={<AuthPage />} />
+        <Route path='/terms' element={<TermsPage />} />
+        <Route path='/privacy' element={<PrivacyPage />} />
+        <Route path='*' element={<AuthPage />} />
       </Routes>
     );
   }
@@ -180,16 +182,16 @@ function AppRoutes() {
   return (
     <AppShell>
       <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/income" element={<IncomePage />} />
-        <Route path="/expenses" element={<ExpensesPage />} />
-        <Route path="/upcoming" element={<UpcomingPage />} />
-        <Route path="/tax"      element={<TaxTrackerPage />} />
-        <Route path="/forecast" element={<ForecastPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="*" element={<NotFoundPage />} />
+        <Route path='/' element={<DashboardPage />} />
+        <Route path='/income' element={<IncomePage />} />
+        <Route path='/expenses' element={<ExpensesPage />} />
+        <Route path='/upcoming' element={<UpcomingPage />} />
+        <Route path='/tax' element={<TaxTrackerPage />} />
+        <Route path='/forecast' element={<ForecastPage />} />
+        <Route path='/settings' element={<SettingsPage />} />
+        <Route path='/terms' element={<TermsPage />} />
+        <Route path='/privacy' element={<PrivacyPage />} />
+        <Route path='*' element={<AuthPage />} />
       </Routes>
     </AppShell>
   );
