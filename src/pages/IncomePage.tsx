@@ -325,7 +325,8 @@ export function IncomePage() {
               </Box>
 
             ) : (
-              <Tabs colorScheme="brand" variant="soft-rounded" size="sm">
+              <Tabs colorScheme="brand" variant="soft-rounded" size="sm"
+                onChange={() => { setBulkMode(false); setSelectedIds(new Set()); }}>
                 <HStack justify="space-between" align="center" mb={4} flexWrap="wrap" gap={3}>
                   <TabList bg="white" border="1px solid #e2e8f0" borderRadius="10px" p={1}>
                     <Tab fontWeight="600" fontSize="13px" borderRadius="8px" px={4} h="30px"
@@ -469,6 +470,15 @@ export function IncomePage() {
                               })}
                             </VStack>
                           </Box>
+
+                          {/* Loaded years note */}
+                          {unloadedYears.length > 0 && (
+                            <Box bg="#fef9c3" border="1px solid #fde68a" borderRadius="10px" px={4} py={2.5}>
+                              <Text fontSize="12px" color="#92400e" fontWeight="500">
+                                Showing loaded years only — load older years in the Timeline tab to include them in this breakdown.
+                              </Text>
+                            </Box>
+                          )}
 
                           {/* Grand total */}
                           <Box bg="white" border="1px solid #e2e8f0" borderRadius="12px" px={5} py={3}>

@@ -324,6 +324,15 @@ export const upcomingApi = {
     if (error) throw error;
   },
 
+  async togglePaid(id: string, currentPaid: boolean): Promise<void> {
+    if (IS_MOCK) return mockUpcomingApi.togglePaid(id, currentPaid);
+    const { error } = await sb()
+      .from('upcoming_expenses')
+      .update({ is_paid: !currentPaid })
+      .eq('id', id);
+    if (error) throw error;
+  },
+
   async update(
     id: string,
     data: { name: string; amount: number; due_date: string },

@@ -11,7 +11,7 @@ import {
   IconButton, Badge, Alert, AlertIcon,
 } from '@chakra-ui/react';
 import {
-  RiAddLine, RiDeleteBin2Line, RiCheckLine,
+  RiAddLine, RiDeleteBin2Line, RiCheckLine, RiCloseLine,
   RiCalendarEventLine, RiAlertLine, RiEditLine,
 } from 'react-icons/ri';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -119,11 +119,11 @@ export function UpcomingPage() {
     }
   };
 
-  const handleMarkPaid = async (id: string) => {
+  const handleTogglePaid = async (id: string, currentPaid: boolean) => {
     try {
-      await upcomingApi.markPaid(id);
+      await upcomingApi.togglePaid(id, currentPaid);
       toast({
-        title: 'Marked as paid',
+        title: currentPaid ? 'Marked as unpaid' : 'Marked as paid',
         description: 'Your safe-to-spend has been updated.',
         status: 'success',
         duration: 2500,
@@ -319,7 +319,7 @@ export function UpcomingPage() {
                             size="xs" variant="ghost"
                             color={subtext} _hover={{ color: '#27AE60', bg: '#eafaf1' }}
                             title="Mark as paid"
-                            onClick={() => handleMarkPaid(exp.id)}
+                            onClick={() => handleTogglePaid(exp.id, false)}
                           />
                           <IconButton
                             aria-label="Delete"
@@ -357,7 +357,7 @@ export function UpcomingPage() {
                             onClick={() => handleOpenEdit(exp)} />
                           <IconButton aria-label="Mark paid" icon={<Icon as={RiCheckLine} />}
                             size="xs" variant="ghost" color={subtext} _hover={{ color: '#27AE60', bg: '#eafaf1' }}
-                            onClick={() => handleMarkPaid(exp.id)} />
+                            onClick={() => handleTogglePaid(exp.id, false)} />
                           <IconButton aria-label="Delete" icon={<Icon as={RiDeleteBin2Line} />}
                             size="xs" variant="ghost" color={subtext} _hover={{ color: '#e11d48', bg: '#fff1f2' }}
                             onClick={() => handleDelete(exp.id)} />
@@ -411,6 +411,14 @@ export function UpcomingPage() {
                             <Td py={3} borderColor={border} isNumeric>
                               <HStack justify="flex-end">
                                 <IconButton
+                                  aria-label="Unmark paid"
+                                  icon={<Icon as={RiCloseLine} />}
+                                  size="xs" variant="ghost"
+                                  color={subtext} _hover={{ color: '#D4A800', bg: '#fef9c3' }}
+                                  title="Mark as unpaid"
+                                  onClick={() => handleTogglePaid(exp.id, true)}
+                                />
+                                <IconButton
                                   aria-label="Delete"
                                   icon={<Icon as={RiDeleteBin2Line} />}
                                   size="xs" variant="ghost"
@@ -441,6 +449,14 @@ export function UpcomingPage() {
                               <Text fontSize="13px" color={muted} textDecoration="line-through">
                                 {formatCurrency(exp.amount, currency)}
                               </Text>
+                              <IconButton
+                                aria-label="Unmark paid"
+                                icon={<Icon as={RiCloseLine} />}
+                                size="xs" variant="ghost"
+                                color={subtext} _hover={{ color: '#D4A800', bg: '#fef9c3' }}
+                                title="Mark as unpaid"
+                                onClick={() => handleTogglePaid(exp.id, true)}
+                              />
                               <IconButton
                                 aria-label="Delete"
                                 icon={<Icon as={RiDeleteBin2Line} />}

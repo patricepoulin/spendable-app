@@ -90,6 +90,12 @@ export function SettingsPage() {
     expected_monthly_income: 0,
   });
   const [saving, setSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  // Wrapper so any form change marks settings as dirty
+  const updateForm = (updater: (prev: typeof form) => typeof form) => {
+    setForm(updater);
+    setIsDirty(true);
+  };
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
@@ -126,6 +132,7 @@ export function SettingsPage() {
 
   useEffect(() => {
     if (settings) {
+      setIsDirty(false);
       setForm({
         tax_rate: Math.round(settings.tax_rate * 100),
         emergency_buffer_months: settings.emergency_buffer_months,
@@ -136,6 +143,15 @@ export function SettingsPage() {
       });
     }
   }, [settings]);
+
+  // Warn on browser/tab close when there are unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -150,6 +166,7 @@ export function SettingsPage() {
         expected_monthly_income: form.expected_monthly_income,
       });
       toast({ title: 'Settings saved', status: 'success', duration: 2000, isClosable: true });
+      setIsDirty(false);
       await refresh();
     } catch {
       toast({ title: 'Failed to save settings', status: 'error', duration: 3000, isClosable: true });
@@ -199,7 +216,7 @@ export function SettingsPage() {
               </FormLabel>
               <NumberInput
                 value={form.tax_rate} min={0} max={65} step={1}
-                onChange={val => setForm(f => ({ ...f, tax_rate: Number(val) }))}
+                onChange={val => updateForm(f => ({ ...f, tax_rate: Number(val) }))}
                 maxW="200px"
               >
                 <NumberInputField {...numInputProps} />
@@ -218,7 +235,7 @@ export function SettingsPage() {
               </FormLabel>
               <Select
                 value={form.tax_schedule}
-                onChange={e => setForm(f => ({ ...f, tax_schedule: e.target.value as 'annual' | 'quarterly' }))}
+                onChange={e => updateForm(f => ({ ...f, tax_schedule: e.target.value as 'annual' | 'quarterly' }))}
                 borderRadius="10px" h="42px" fontSize="14px" maxW="320px"
               >
                 <option value="annual">Annual — one or two payments per year (UK self-assessment)</option>
@@ -243,7 +260,7 @@ export function SettingsPage() {
               </FormLabel>
               <NumberInput
                 value={form.emergency_buffer_months} min={0} max={24} step={1}
-                onChange={val => setForm(f => ({ ...f, emergency_buffer_months: Number(val) }))}
+                onChange={val => updateForm(f => ({ ...f, emergency_buffer_months: Number(val) }))}
                 maxW="200px"
               >
                 <NumberInputField {...numInputProps} />
@@ -294,7 +311,7 @@ export function SettingsPage() {
                 </HStack>
                 <NumberInput
                   value={form.starting_balance} min={0} step={100}
-                  onChange={val => setForm(f => ({ ...f, starting_balance: Number(val) }))}
+                  onChange={val => updateForm(f => ({ ...f, starting_balance: Number(val) }))}
                 >
                   <NumberInputField {...numInputProps} />
                   <NumberInputStepper>
@@ -310,7 +327,7 @@ export function SettingsPage() {
                 <FormLabel fontSize="12px" fontWeight="600" color={muted} mb={1.5}>Currency</FormLabel>
                 <Select
                   value={form.currency}
-                  onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}
+                  onChange={e => updateForm(f => ({ ...f, currency: e.target.value }))}
                   borderRadius="10px" h="42px" fontSize="14px"
                 >
                   <option value="USD">USD — US Dollar</option>
@@ -345,7 +362,7 @@ export function SettingsPage() {
               </HStack>
               <NumberInput
                 value={form.expected_monthly_income} min={0} step={100}
-                onChange={val => setForm(f => ({ ...f, expected_monthly_income: Number(val) }))}
+                onChange={val => updateForm(f => ({ ...f, expected_monthly_income: Number(val) }))}
                 maxW="240px"
               >
                 <NumberInputField {...numInputProps} placeholder="0 — leave blank if variable" />
@@ -372,18 +389,25 @@ export function SettingsPage() {
             </HStack>
           </Box>
 
-          <Button
-            leftIcon={<Icon as={RiSave2Line} />}
-            bg="#4C5FD5" color="white"
-            borderRadius="10px" fontWeight="600" fontSize="13px"
-            _hover={{ bg: '#3D4FBF' }}
-            isLoading={saving}
-            onClick={handleSave}
-            alignSelf="flex-start"
-            h="42px" px={6}
-          >
-            Save Settings
-          </Button>
+          <HStack spacing={4} align="center">
+            <Button
+              leftIcon={<Icon as={RiSave2Line} />}
+              bg="#4C5FD5" color="white"
+              borderRadius="10px" fontWeight="600" fontSize="13px"
+              _hover={{ bg: '#3D4FBF' }}
+              isLoading={saving}
+              onClick={handleSave}
+              alignSelf="flex-start"
+              h="42px" px={6}
+            >
+              Save Settings
+            </Button>
+            {isDirty && (
+              <Text fontSize="12px" color="#D4A800" fontWeight="600">
+                Unsaved changes
+              </Text>
+            )}
+          </HStack>
 
           {/* ── Data Export ── */}
           <SettingSection

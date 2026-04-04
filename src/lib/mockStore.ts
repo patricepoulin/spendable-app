@@ -459,6 +459,14 @@ export const mockUpcomingApi = {
     }
   },
 
+  async togglePaid(id: string, currentPaid: boolean): Promise<void> {
+    const idx = store.upcoming.findIndex((e) => e.id === id);
+    if (idx !== -1) {
+      store.upcoming[idx].is_paid = !currentPaid;
+      persist();
+    }
+  },
+
   async update(
     id: string,
     data: { name: string; amount: number; due_date: string },

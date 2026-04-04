@@ -505,7 +505,11 @@ export function DashboardPage() {
           <StatCard
             label="Avg Income"
             value={metrics ? formatCurrency(metrics.smoothedMonthlyIncome, currency) : '—'}
-            subtext="6-month rolling avg"
+            subtext={
+              settings?.expected_monthly_income && settings.expected_monthly_income > 0
+                ? `Floor: ${formatCurrency(settings.expected_monthly_income, currency)}/mo applied`
+                : '6-month rolling avg'
+            }
             icon={RiLineChartLine}
             accentHex="#8B5CF6"
             isLoading={loading}
