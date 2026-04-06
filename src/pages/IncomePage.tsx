@@ -114,6 +114,58 @@ export function IncomePage() {
     }
   };
 
+  // ── All-time source totals (for By Source tab) ─────────────────────────────
+  const [allTimeSources, setAllTimeSources] = useState<Array<{ source: string; total: number; count: number }> | null>(null);
+  const [sourcesLoading, setSourcesLoading] = useState(false);
+
+  const fetchAllTimeSources = async () => {
+    if (!user) return;
+    setSourcesLoading(true);
+    try {
+      const data = await incomeApi.listSourceTotals(user.id);
+      setAllTimeSources(data);
+    } catch {
+      // fall back to loaded-only data silently
+    } finally {
+      setSourcesLoading(false);
+    }
+  };
+
+  // ── Auto-log recurring income ─────────────────────────────────────────────
+  const [autoLogDismissed, setAutoLogDismissed] = useState(false);
+  const [autoLogging, setAutoLogging] = useState(false);
+
+  const currentMonthKey = new Date().toISOString().slice(0, 7); // "2026-04"
+  const hasLoggedThisMonth = allLoadedIncome.some(e => e.date.startsWith(currentMonthKey));
+  const expectedIncome = settings?.expected_monthly_income ?? 0;
+  const showAutoLogPrompt =
+    !autoLogDismissed &&
+    expectedIncome > 0 &&
+    !hasLoggedThisMonth &&
+    allLoadedIncome.length > 0 &&
+    !initialLoading;
+
+  const handleAutoLog = async () => {
+    if (!user || !expectedIncome) return;
+    setAutoLogging(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      await incomeApi.create(user.id, {
+        amount: expectedIncome,
+        date: today,
+        source: 'Retainer',
+        notes: `Auto-logged from Expected Monthly Income (${currentMonthKey})`,
+      });
+      toast({ title: 'Retainer income logged', status: 'success', duration: 2500, isClosable: true });
+      setAutoLogDismissed(true);
+      await refresh();
+    } catch {
+      toast({ title: 'Failed to log income', status: 'error', duration: 3000, isClosable: true });
+    } finally {
+      setAutoLogging(false);
+    }
+  };
+
   const muted  = '#64748b';
   const border = '#e2e8f0';
 
@@ -325,8 +377,53 @@ export function IncomePage() {
               </Box>
 
             ) : (
+              <>
+              {/* Auto-log retainer prompt */}
+              {showAutoLogPrompt && (
+                <Box bg="white" border="1px solid #c7d0f5" borderRadius="12px" p={4} mb={4}>
+                  <HStack align="flex-start" spacing={3}>
+                    <Box w={8} h={8} borderRadius="8px" bg="#eef0fb" border="1px solid #c7d0f5"
+                      display="flex" alignItems="center" justifyContent="center" flexShrink={0} mt={0.5}>
+                      <Icon as={RiAddLine} color="#4C5FD5" boxSize="14px" />
+                    </Box>
+                    <Box flex={1}>
+                      <Text fontSize="13px" fontWeight="700" color="#1C2B3A" mb={0.5}>
+                        Log your retainer for {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}?
+                      </Text>
+                      <Text fontSize="12px" color="#5a6a7a" mb={3}>
+                        No income recorded this month yet. Log your expected{' '}
+                        <Text as="span" fontWeight="600">{formatCurrency(expectedIncome, currency)}</Text> retainer automatically?
+                      </Text>
+                      <HStack spacing={2}>
+                        <Button size="xs" bg="#4C5FD5" color="white" borderRadius="6px"
+                          fontWeight="600" fontSize="11px" h="26px" px={3}
+                          isLoading={autoLogging}
+                          _hover={{ bg: '#3D4FBF' }}
+                          onClick={handleAutoLog}>
+                          Log {formatCurrency(expectedIncome, currency)} now
+                        </Button>
+                        <Button size="xs" variant="ghost" color="#8a9aaa" borderRadius="6px"
+                          fontWeight="600" fontSize="11px" h="26px" px={2}
+                          _hover={{ color: '#5a6a7a' }}
+                          onClick={() => setAutoLogDismissed(true)}>
+                          Skip this month
+                        </Button>
+                      </HStack>
+                    </Box>
+                    <IconButton aria-label="Dismiss" icon={<Icon as={RiCloseLine} boxSize="14px" />}
+                      size="xs" variant="ghost" color="#8a9aaa" borderRadius="6px"
+                      _hover={{ color: '#5a6a7a' }}
+                      onClick={() => setAutoLogDismissed(true)} />
+                  </HStack>
+                </Box>
+              )}
+
               <Tabs colorScheme="brand" variant="soft-rounded" size="sm"
-                onChange={() => { setBulkMode(false); setSelectedIds(new Set()); }}>
+                onChange={(idx) => {
+                  setBulkMode(false);
+                  setSelectedIds(new Set());
+                  if (idx === 1 && allTimeSources === null) fetchAllTimeSources();
+                }}>
                 <HStack justify="space-between" align="center" mb={4} flexWrap="wrap" gap={3}>
                   <TabList bg="white" border="1px solid #e2e8f0" borderRadius="10px" p={1}>
                     <Tab fontWeight="600" fontSize="13px" borderRadius="8px" px={4} h="30px"
@@ -414,27 +511,37 @@ export function IncomePage() {
                   {/* ── By Source tab ── */}
                   <TabPanel p={0}>
                     {(() => {
-                      // Group all loaded income by source
-                      const bySource: Record<string, { total: number; count: number }> = {};
-                      allLoadedIncome.forEach(e => {
-                        if (!bySource[e.source]) bySource[e.source] = { total: 0, count: 0 };
-                        bySource[e.source].total += e.amount;
-                        bySource[e.source].count += 1;
-                      });
-                      const sorted = Object.entries(bySource)
-                        .sort(([, a], [, b]) => b.total - a.total);
-                      const grandTotal = allLoadedIncome.reduce((s, e) => s + e.amount, 0);
+                      // Use all-time source totals if fetched, otherwise fall back to loaded years
+                      const sourceData = allTimeSources ?? (() => {
+                        const map: Record<string, { total: number; count: number }> = {};
+                        allLoadedIncome.forEach(e => {
+                          if (!map[e.source]) map[e.source] = { total: 0, count: 0 };
+                          map[e.source].total += e.amount;
+                          map[e.source].count += 1;
+                        });
+                        return Object.entries(map).map(([source, d]) => ({ source, ...d }));
+                      })();
+                      const sorted = [...sourceData].sort((a, b) => b.total - a.total);
+                      const grandTotal = sorted.reduce((s, d) => s + d.total, 0);
+                      const entryCount = sorted.reduce((s, d) => s + d.count, 0);
 
                       return (
                         <VStack spacing={3} align="stretch">
                           {/* Summary card */}
                           <Box bg="white" border="1px solid #e2e8f0" borderRadius="14px" p={5}>
-                            <Text fontSize="12px" fontWeight="700" color="#8a9aaa"
-                              textTransform="uppercase" letterSpacing="0.5px" mb={4}>
-                              Income by Client / Source
-                            </Text>
+                            <HStack justify="space-between" mb={4}>
+                              <Text fontSize="12px" fontWeight="700" color="#8a9aaa"
+                                textTransform="uppercase" letterSpacing="0.5px">
+                                Income by Client / Source
+                              </Text>
+                              {sourcesLoading && <Spinner size="xs" color="#4C5FD5" />}
+                              {allTimeSources !== null && !sourcesLoading && (
+                                <Text fontSize="11px" color="#27AE60" fontWeight="600">All-time</Text>
+                              )}
+                            </HStack>
                             <VStack spacing={3} align="stretch">
-                              {sorted.map(([source, data]) => {
+                              {sorted.map((data) => {
+                                const source = data.source;
                                 const pct = grandTotal > 0 ? (data.total / grandTotal) * 100 : 0;
                                 return (
                                   <Box key={source}>
@@ -471,20 +578,11 @@ export function IncomePage() {
                             </VStack>
                           </Box>
 
-                          {/* Loaded years note */}
-                          {unloadedYears.length > 0 && (
-                            <Box bg="#fef9c3" border="1px solid #fde68a" borderRadius="10px" px={4} py={2.5}>
-                              <Text fontSize="12px" color="#92400e" fontWeight="500">
-                                Showing loaded years only — load older years in the Timeline tab to include them in this breakdown.
-                              </Text>
-                            </Box>
-                          )}
-
                           {/* Grand total */}
                           <Box bg="white" border="1px solid #e2e8f0" borderRadius="12px" px={5} py={3}>
                             <HStack justify="space-between">
                               <Text fontSize="13px" color="#5a6a7a" fontWeight="500">
-                                Total across all sources ({allLoadedIncome.length} entries)
+                                Total across all sources ({entryCount} entries{allTimeSources === null && unloadedYears.length > 0 ? ', loaded years only' : ''})
                               </Text>
                               <Text fontSize="14px" fontWeight="800" color="#27AE60">
                                 {new Intl.NumberFormat('en-US', {
@@ -499,6 +597,7 @@ export function IncomePage() {
                   </TabPanel>
                 </TabPanels>
               </Tabs>
+              </>
             )}
           </Box>
         </Box>

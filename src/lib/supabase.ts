@@ -228,6 +228,34 @@ export const incomeApi = {
     return count ?? 0;
   },
 
+  /** Returns all-time income totals grouped by source — used by By Source tab. */
+  async listSourceTotals(userId: string): Promise<Array<{ source: string; total: number; count: number }>> {
+    if (IS_MOCK) {
+      const all = await mockIncomeApi.list(userId);
+      const map: Record<string, { total: number; count: number }> = {};
+      for (const e of all) {
+        if (!map[e.source]) map[e.source] = { total: 0, count: 0 };
+        map[e.source].total += e.amount;
+        map[e.source].count += 1;
+      }
+      return Object.entries(map).map(([source, d]) => ({ source, total: d.total, count: d.count }));
+    }
+    // Supabase doesn't support GROUP BY directly via the JS client,
+    // so we fetch just source + amount (lightweight) and aggregate client-side.
+    const { data, error } = await sb()
+      .from('income_events')
+      .select('source, amount')
+      .eq('user_id', userId);
+    if (error) throw error;
+    const map: Record<string, { total: number; count: number }> = {};
+    for (const row of (data ?? [])) {
+      if (!map[row.source]) map[row.source] = { total: 0, count: 0 };
+      map[row.source].total += row.amount;
+      map[row.source].count += 1;
+    }
+    return Object.entries(map).map(([source, d]) => ({ source, total: d.total, count: d.count }));
+  },
+
   async batchInsert(
     rows: Array<{
       user_id: string;

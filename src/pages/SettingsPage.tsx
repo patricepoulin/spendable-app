@@ -17,6 +17,7 @@ import { UpgradeModal } from '../components/subscription/UpgradeModal';
 import { useSubscription } from '../hooks/useSubscription';
 import { PageHeader } from '../components/ui/PageHeader';
 import { useFinancials } from '../hooks/useFinancials';
+import { formatCurrency } from '../utils/calculations';
 import { useAuth } from '../hooks/useAuth';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { settingsApi, incomeApi, IS_MOCK } from '../lib/supabase';
@@ -327,7 +328,19 @@ export function SettingsPage() {
                 <FormLabel fontSize="12px" fontWeight="600" color={muted} mb={1.5}>Currency</FormLabel>
                 <Select
                   value={form.currency}
-                  onChange={e => updateForm(f => ({ ...f, currency: e.target.value }))}
+                  onChange={e => {
+                    const newCurrency = e.target.value;
+                    if (newCurrency !== settings?.currency && income.length > 0) {
+                      toast({
+                        title: 'Currency affects how amounts are displayed',
+                        description: 'Your existing income entries will show the new currency symbol — the underlying amounts stay unchanged. Make sure your entries were recorded in the new currency.',
+                        status: 'warning',
+                        duration: 7000,
+                        isClosable: true,
+                      });
+                    }
+                    updateForm(f => ({ ...f, currency: newCurrency }));
+                  }}
                   borderRadius="10px" h="42px" fontSize="14px"
                 >
                   <option value="USD">USD — US Dollar</option>
@@ -374,6 +387,24 @@ export function SettingsPage() {
               <FormHelperText fontSize="11px" color={muted} mt={1.5}>
                 Set to your retainer or minimum monthly income. Leave at 0 if fully variable.
               </FormHelperText>
+              {/* Floor status — only show when a floor is set */}
+              {form.expected_monthly_income > 0 && metrics && (
+                <Box mt={3} px={3} py={2.5} borderRadius="8px"
+                  bg={metrics.smoothedMonthlyIncome <= form.expected_monthly_income ? '#eef0fb' : '#f0fdf4'}
+                  border="1px solid"
+                  borderColor={metrics.smoothedMonthlyIncome <= form.expected_monthly_income ? '#c7d0f5' : '#bbf7d0'}
+                >
+                  {metrics.smoothedMonthlyIncome <= form.expected_monthly_income ? (
+                    <Text fontSize="12px" color="#4C5FD5" fontWeight="500">
+                      ✓ Floor is <Text as="span" fontWeight="700">active</Text> — your 6-month average ({formatCurrency(metrics.smoothedMonthlyIncome, settings?.currency ?? 'USD')}/mo) is below your floor, so Spendable uses {formatCurrency(form.expected_monthly_income, settings?.currency ?? 'USD')}/mo instead.
+                    </Text>
+                  ) : (
+                    <Text fontSize="12px" color="#166534" fontWeight="500">
+                      Your 6-month average ({formatCurrency(metrics.smoothedMonthlyIncome, settings?.currency ?? 'USD')}/mo) is above your floor — the floor is not currently active.
+                    </Text>
+                  )}
+                </Box>
+              )}
             </FormControl>
           </SettingSection>
 
