@@ -15,6 +15,7 @@ export interface UserSettings {
   currency: string;              // e.g. "USD"
   tax_schedule: 'annual' | 'quarterly'; // payment cadence for tax tracker
   expected_monthly_income: number; // optional retainer / floor income, 0 = not set
+  paid_tax_deadline_ids: string[]; // deadline IDs marked as paid in Tax Tracker
   updated_at: string;
 }
 
@@ -104,6 +105,7 @@ export interface SettingsFormData {
   currency: string;
   tax_schedule: 'annual' | 'quarterly';
   expected_monthly_income: number;
+  paid_tax_deadline_ids: string[];
 }
 
 // ─── Supabase Table Names ─────────────────────────────────────────────────────

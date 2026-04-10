@@ -191,3 +191,11 @@ alter table public.user_settings
 
 alter table public.user_settings
   add column if not exists expected_monthly_income numeric not null default 0;
+
+-- ============================================================
+-- Migration: Tax Tracker paid deadlines (DB-backed)
+-- Safe to run multiple times — uses IF NOT EXISTS
+-- ============================================================
+
+alter table public.user_settings
+  add column if not exists paid_tax_deadline_ids text[] not null default '{}';

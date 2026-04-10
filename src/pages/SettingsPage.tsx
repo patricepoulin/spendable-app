@@ -89,6 +89,7 @@ export function SettingsPage() {
     currency: 'USD',
     tax_schedule: 'annual' as 'annual' | 'quarterly',
     expected_monthly_income: 0,
+    paid_tax_deadline_ids: [] as string[],
   });
   const [saving, setSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -141,6 +142,7 @@ export function SettingsPage() {
         currency: settings.currency,
         tax_schedule: settings.tax_schedule ?? 'annual',
         expected_monthly_income: settings.expected_monthly_income ?? 0,
+        paid_tax_deadline_ids: settings.paid_tax_deadline_ids ?? [],
       });
     }
   }, [settings]);
@@ -165,6 +167,7 @@ export function SettingsPage() {
         currency: form.currency,
         tax_schedule: form.tax_schedule,
         expected_monthly_income: form.expected_monthly_income,
+        paid_tax_deadline_ids: form.paid_tax_deadline_ids,
       });
       toast({ title: 'Settings saved', status: 'success', duration: 2000, isClosable: true });
       setIsDirty(false);

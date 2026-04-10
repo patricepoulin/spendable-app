@@ -19,7 +19,7 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { calcTaxTracker, daysUntilDeadline, getTaxYearStartIso } from '../utils/taxTracker';
 import { calcTaxReserve } from '../utils/calculations';
 import { formatCurrency } from '../utils/calculations';
-import { incomeApi } from '../lib/supabase';
+import { incomeApi, settingsApi } from '../lib/supabase';
 import type { IncomeEvent } from '../types';
 import { PAGE_BG } from '../theme';
 
@@ -231,24 +231,41 @@ export function TaxTrackerPage() {
 
   const loading = finLoading || incomeLoading;
 
-  // ── Paid deadlines — persisted to localStorage per user ──────────────────
-  const storageKey = user ? `spendable_tax_paid_${user.id}` : null;
+  // ── Paid deadlines — persisted to DB via user_settings ──────────────────
+  // Initialise from DB settings with localStorage as fallback for existing users.
+  const legacyKey = user ? `spendable_tax_paid_${user.id}` : null;
 
   const [paidIds, setPaidIds] = useState<Set<string>>(() => {
-    if (!storageKey) return new Set();
-    try {
-      const raw = localStorage.getItem(storageKey);
-      return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
-    } catch { return new Set(); }
+    if (settings?.paid_tax_deadline_ids?.length) {
+      return new Set(settings.paid_tax_deadline_ids);
+    }
+    if (legacyKey) {
+      try {
+        const raw = localStorage.getItem(legacyKey);
+        return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+      } catch { return new Set(); }
+    }
+    return new Set();
   });
 
-  // Persist whenever paidIds changes
+  // Sync paidIds to DB whenever it changes
   useEffect(() => {
-    if (!storageKey) return;
-    try {
-      localStorage.setItem(storageKey, JSON.stringify([...paidIds]));
-    } catch { /* storage full — ignore */ }
-  }, [paidIds, storageKey]);
+    if (!user || !settings) return;
+    const ids = [...paidIds];
+    settingsApi.upsert(user.id, {
+      tax_rate: settings.tax_rate,
+      emergency_buffer_months: settings.emergency_buffer_months,
+      starting_balance: settings.starting_balance,
+      currency: settings.currency,
+      tax_schedule: settings.tax_schedule ?? 'annual',
+      expected_monthly_income: settings.expected_monthly_income ?? 0,
+      paid_tax_deadline_ids: ids,
+    }).catch(() => { /* non-critical */ });
+    if (legacyKey) {
+      try { localStorage.setItem(legacyKey, JSON.stringify(ids)); } catch { /* ignore */ }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paidIds]);
 
   const handleTogglePaid = (id: string) => {
     setPaidIds(prev => {

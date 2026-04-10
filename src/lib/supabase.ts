@@ -116,6 +116,7 @@ export const settingsApi = {
       currency: 'USD',
       tax_schedule: 'annual',
       expected_monthly_income: 0,
+      paid_tax_deadline_ids: [],
     };
   },
 };
