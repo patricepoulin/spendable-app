@@ -10,8 +10,9 @@ import {
   Alert, AlertIcon,
   Tabs, TabList, Tab, TabPanels, TabPanel,
   Badge, Progress, SimpleGrid, IconButton,
+  Menu, MenuButton, MenuList, MenuItem, MenuDivider,
 } from '@chakra-ui/react';
-import { RiAddLine, RiDownload2Line, RiArrowDownSLine, RiUpload2Line, RiDeleteBin2Line, RiCheckboxLine, RiCloseLine, RiPieChartLine } from 'react-icons/ri';
+import { RiAddLine, RiDownload2Line, RiArrowDownSLine, RiUpload2Line, RiDeleteBin2Line, RiCheckboxLine, RiCloseLine, RiPieChartLine, RiMoreLine } from 'react-icons/ri';
 import { CsvImportModal } from '../components/income/CsvImportModal';
 import { UpgradeModal } from '../components/subscription/UpgradeModal';
 import { useSubscription } from '../hooks/useSubscription';
@@ -290,43 +291,91 @@ export function IncomePage() {
             }
             action={
               <HStack spacing={2}>
-                <Button
-                  leftIcon={<Icon as={RiDownload2Line} />}
-                  variant="outline" borderColor="#E8E8E3"
-                  bg="white" color="#5a6a7a"
-                  h="32px" px={3}
-                  borderRadius="10px" fontWeight="600" fontSize="13px"
-                  _hover={{ bg: '#F0EFE9' }}
-                  isDisabled={allLoadedIncome.length === 0}
-                  onClick={() => canExportCsv ? exportIncomeCsv(allLoadedIncome, currency) : onUpgradeOpen()}
-                >
-                  Export CSV
-                </Button>
-                <Button
-                  leftIcon={<Icon as={RiUpload2Line} />}
-                  variant="outline" borderColor="#E8E8E3"
-                  bg="white" color="#5a6a7a"
-                  h="32px" px={3}
-                  borderRadius="10px" fontWeight="600" fontSize="13px"
-                  _hover={{ bg: '#F0EFE9' }}
-                  isDisabled={!isOnline}
-                  onClick={onCsvOpen}
-                >
-                  Import CSV
-                </Button>
-                <Button
-                  leftIcon={<Icon as={bulkMode ? RiCloseLine : RiCheckboxLine} />}
-                  variant="outline" borderColor={bulkMode ? '#4C5FD5' : '#E8E8E3'}
-                  bg={bulkMode ? '#eef0fb' : 'white'}
-                  color={bulkMode ? '#4C5FD5' : '#5a6a7a'}
-                  h="32px" px={3}
-                  borderRadius="10px" fontWeight="600" fontSize="13px"
-                  _hover={{ bg: bulkMode ? '#e4e8fa' : '#F0EFE9' }}
-                  isDisabled={allLoadedIncome.length === 0}
-                  onClick={toggleBulkMode}
-                >
-                  {bulkMode ? 'Cancel' : 'Select'}
-                </Button>
+                {/* Desktop: show all buttons */}
+                <HStack spacing={2} display={{ base: 'none', md: 'flex' }}>
+                  <Button
+                    leftIcon={<Icon as={RiDownload2Line} />}
+                    variant="outline" borderColor="#E8E8E3"
+                    bg="white" color="#5a6a7a"
+                    h="32px" px={3}
+                    borderRadius="10px" fontWeight="600" fontSize="13px"
+                    _hover={{ bg: '#F0EFE9' }}
+                    isDisabled={allLoadedIncome.length === 0}
+                    onClick={() => canExportCsv ? exportIncomeCsv(allLoadedIncome, currency) : onUpgradeOpen()}
+                  >
+                    Export CSV
+                  </Button>
+                  <Button
+                    leftIcon={<Icon as={RiUpload2Line} />}
+                    variant="outline" borderColor="#E8E8E3"
+                    bg="white" color="#5a6a7a"
+                    h="32px" px={3}
+                    borderRadius="10px" fontWeight="600" fontSize="13px"
+                    _hover={{ bg: '#F0EFE9' }}
+                    isDisabled={!isOnline}
+                    onClick={onCsvOpen}
+                  >
+                    Import CSV
+                  </Button>
+                  <Button
+                    leftIcon={<Icon as={bulkMode ? RiCloseLine : RiCheckboxLine} />}
+                    variant="outline" borderColor={bulkMode ? '#4C5FD5' : '#E8E8E3'}
+                    bg={bulkMode ? '#eef0fb' : 'white'}
+                    color={bulkMode ? '#4C5FD5' : '#5a6a7a'}
+                    h="32px" px={3}
+                    borderRadius="10px" fontWeight="600" fontSize="13px"
+                    _hover={{ bg: bulkMode ? '#e4e8fa' : '#F0EFE9' }}
+                    isDisabled={allLoadedIncome.length === 0}
+                    onClick={toggleBulkMode}
+                  >
+                    {bulkMode ? 'Cancel' : 'Select'}
+                  </Button>
+                </HStack>
+
+                {/* Mobile: collapse secondary actions into ··· menu */}
+                <Menu>
+                  <MenuButton
+                    as={IconButton}
+                    aria-label="More actions"
+                    icon={<Icon as={RiMoreLine} boxSize="16px" />}
+                    variant="outline" borderColor="#E8E8E3"
+                    bg="white" color="#5a6a7a"
+                    h="32px" w="32px" minW="32px"
+                    borderRadius="10px"
+                    _hover={{ bg: '#F0EFE9' }}
+                    display={{ base: 'flex', md: 'none' }}
+                  />
+                  <MenuList fontSize="13px" borderRadius="10px" shadow="lg" minW="160px">
+                    <MenuItem
+                      icon={<Icon as={RiDownload2Line} boxSize="14px" />}
+                      isDisabled={allLoadedIncome.length === 0}
+                      onClick={() => canExportCsv ? exportIncomeCsv(allLoadedIncome, currency) : onUpgradeOpen()}
+                      fontWeight="500"
+                    >
+                      Export CSV
+                    </MenuItem>
+                    <MenuItem
+                      icon={<Icon as={RiUpload2Line} boxSize="14px" />}
+                      isDisabled={!isOnline}
+                      onClick={onCsvOpen}
+                      fontWeight="500"
+                    >
+                      Import CSV
+                    </MenuItem>
+                    <MenuDivider />
+                    <MenuItem
+                      icon={<Icon as={bulkMode ? RiCloseLine : RiCheckboxLine} boxSize="14px" />}
+                      isDisabled={allLoadedIncome.length === 0}
+                      onClick={toggleBulkMode}
+                      fontWeight="500"
+                      color={bulkMode ? '#4C5FD5' : undefined}
+                    >
+                      {bulkMode ? 'Cancel select' : 'Select entries'}
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+
+                {/* Always visible: primary action */}
                 <Button
                   leftIcon={<Icon as={RiAddLine} />}
                   bg="#4C5FD5" color="white"

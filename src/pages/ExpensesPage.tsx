@@ -9,8 +9,9 @@ import {
   FormControl, FormLabel, Input, Select,
   useDisclosure, useToast,
   IconButton, Alert, AlertIcon, Badge, Switch,
+  Menu, MenuButton, MenuList, MenuItem,
 } from '@chakra-ui/react';
-import { RiAddLine, RiDeleteBin2Line, RiDownload2Line, RiEditLine } from 'react-icons/ri';
+import { RiAddLine, RiDeleteBin2Line, RiDownload2Line, RiEditLine, RiMoreLine } from 'react-icons/ri';
 import { PageHeader } from '../components/ui/PageHeader';
 import { useFinancials } from '../hooks/useFinancials';
 import { useAuth } from '../hooks/useAuth';
@@ -179,6 +180,7 @@ export function ExpensesPage() {
             subtitle={expenses.length === 0 ? 'Track your recurring outgoings' : `${expenses.length} expense${expenses.length !== 1 ? 's' : ''} · ${formatCurrency(totalMonthly, currency)}/mo total`}
             action={
               <HStack spacing={2}>
+                {/* Desktop: show Export CSV */}
                 <Button
                   leftIcon={<Icon as={RiDownload2Line} />}
                   variant="outline" borderColor="#E8E8E3"
@@ -187,10 +189,36 @@ export function ExpensesPage() {
                   borderRadius="10px" fontWeight="600" fontSize="13px"
                   _hover={{ bg: '#F0EFE9' }}
                   isDisabled={expenses.length === 0}
+                  display={{ base: 'none', md: 'flex' }}
                   onClick={() => canExportCsv ? exportExpensesCsv(expenses, currency) : onUpgradeOpen()}
                 >
                   Export CSV
                 </Button>
+                {/* Mobile: ··· menu for secondary actions */}
+                <Menu>
+                  <MenuButton
+                    as={IconButton}
+                    aria-label="More actions"
+                    icon={<Icon as={RiMoreLine} boxSize="16px" />}
+                    variant="outline" borderColor="#E8E8E3"
+                    bg="white" color="#5a6a7a"
+                    h="32px" w="32px" minW="32px"
+                    borderRadius="10px"
+                    _hover={{ bg: '#F0EFE9' }}
+                    display={{ base: 'flex', md: 'none' }}
+                  />
+                  <MenuList fontSize="13px" borderRadius="10px" shadow="lg" minW="160px">
+                    <MenuItem
+                      icon={<Icon as={RiDownload2Line} boxSize="14px" />}
+                      isDisabled={expenses.length === 0}
+                      onClick={() => canExportCsv ? exportExpensesCsv(expenses, currency) : onUpgradeOpen()}
+                      fontWeight="500"
+                    >
+                      Export CSV
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+                {/* Always visible: primary action */}
                 <Button
                   leftIcon={<Icon as={RiAddLine} />}
                   bg={isAtExpenseLimit ? '#94a3b8' : '#4C5FD5'}
