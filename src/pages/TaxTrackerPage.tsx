@@ -253,6 +253,14 @@ export function TaxTrackerPage() {
 
   const syncPaidIds = useCallback((ids: string[]) => {
     if (!user || !settings) return;
+    // Prune stale IDs — deadline IDs are date strings like "2026-01-31".
+    // Only keep IDs from the current year or the previous year to prevent
+    // orphaned entries accumulating as tax years roll over.
+    const currentYear = new Date().getFullYear();
+    const freshIds = ids.filter(id => {
+      const year = parseInt(id.slice(0, 4), 10);
+      return !isNaN(year) && year >= currentYear - 1;
+    });
     settingsApi.upsert(user.id, {
       tax_rate: settings.tax_rate,
       emergency_buffer_months: settings.emergency_buffer_months,
@@ -260,10 +268,10 @@ export function TaxTrackerPage() {
       currency: settings.currency,
       tax_schedule: settings.tax_schedule ?? 'annual',
       expected_monthly_income: settings.expected_monthly_income ?? 0,
-      paid_tax_deadline_ids: ids,
+      paid_tax_deadline_ids: freshIds,
     }).catch(() => { /* non-critical */ });
     if (legacyKey) {
-      try { localStorage.setItem(legacyKey, JSON.stringify(ids)); } catch { /* ignore */ }
+      try { localStorage.setItem(legacyKey, JSON.stringify(freshIds)); } catch { /* ignore */ }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, settings, legacyKey]);

@@ -102,16 +102,69 @@ export function IncomePage() {
 
   const confirmBulkDelete = async () => {
     if (selectedIds.size === 0) return;
+
+    // Snapshot the entries before deleting so we can restore on undo
+    const toDelete = allLoadedIncome.filter(e => selectedIds.has(e.id));
+    const count    = toDelete.length;
+
+    onBulkDeleteClose();
+    setSelectedIds(new Set());
+    setBulkMode(false);
+
     try {
-      await Promise.all([...selectedIds].map(id => incomeApi.delete(id)));
-      toast({ title: `${selectedIds.size} entries removed`, status: 'info', duration: 2500, isClosable: true });
-      setSelectedIds(new Set());
-      setBulkMode(false);
+      await Promise.all(toDelete.map(e => incomeApi.delete(e.id)));
       await refresh();
+
+      // Show undo toast — user has 5 s to restore
+      toast({
+        id:       'bulk-delete-undo',
+        title:    `${count} ${count === 1 ? 'entry' : 'entries'} deleted`,
+        status:   'info',
+        duration: 5000,
+        isClosable: true,
+        render:   ({ onClose }) => (
+          <Box
+            bg="#1C2B3A" color="white" px={4} py={3}
+            borderRadius="10px" boxShadow="lg"
+            display="flex" alignItems="center" justifyContent="space-between"
+            gap={4} minW="260px"
+          >
+            <Text fontSize="13px" fontWeight="500">
+              {count} {count === 1 ? 'entry' : 'entries'} deleted
+            </Text>
+            <Button
+              size="xs" variant="outline" borderColor="whiteAlpha.400"
+              color="white" borderRadius="6px" fontWeight="700" fontSize="11px"
+              h="24px" px={3} flexShrink={0}
+              _hover={{ bg: 'whiteAlpha.200' }}
+              onClick={async () => {
+                onClose();
+                try {
+                  if (!user) return;
+                  // Re-insert all deleted entries in one batch
+                  await incomeApi.batchInsert(
+                    toDelete.map(e => ({
+                      user_id: user.id,
+                      date:    e.date,
+                      source:  e.source,
+                      amount:  e.amount,
+                      notes:   e.notes ?? '',
+                    }))
+                  );
+                  await refresh();
+                  toast({ title: `${count} ${count === 1 ? 'entry' : 'entries'} restored`, status: 'success', duration: 2500, isClosable: true });
+                } catch {
+                  toast({ title: 'Restore failed', status: 'error', duration: 3000, isClosable: true });
+                }
+              }}
+            >
+              Undo
+            </Button>
+          </Box>
+        ),
+      });
     } catch {
       toast({ title: 'Failed to delete some entries', status: 'error', duration: 3000, isClosable: true });
-    } finally {
-      onBulkDeleteClose();
     }
   };
 
@@ -671,7 +724,7 @@ export function IncomePage() {
             Delete {selectedIds.size} {selectedIds.size === 1 ? 'entry' : 'entries'}?
           </AlertDialogHeader>
           <AlertDialogBody fontSize="13px" color="#5a6a7a">
-            This will permanently remove the selected income entries and update all your financial metrics. This cannot be undone.
+            This will remove the selected income entries and update all your financial metrics. You'll have 5 seconds to undo.
           </AlertDialogBody>
           <AlertDialogFooter gap={2}>
             <Button ref={bulkDeleteRef} variant="ghost" borderRadius="8px" fontWeight="600" fontSize="13px"
