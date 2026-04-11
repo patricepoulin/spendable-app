@@ -358,7 +358,9 @@ export function DashboardPage() {
     const diff = Date.now() - new Date(settings.updated_at).getTime();
     return Math.floor(diff / (1000 * 60 * 60 * 24));
   })();
-  const showBalanceNudge = !loading && income.length > 0 && daysSinceBalanceUpdate !== null && daysSinceBalanceUpdate > 60;
+  // Only nudge active users (6+ income entries = ~6 months of logging) so new users
+  // who just set their balance on signup don't see it after 60 days of normal use.
+  const showBalanceNudge = !loading && income.length >= 6 && daysSinceBalanceUpdate !== null && daysSinceBalanceUpdate > 60;
 
   return (
     <Box>

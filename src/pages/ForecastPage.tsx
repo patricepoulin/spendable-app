@@ -1,5 +1,7 @@
 import { Box, SimpleGrid, Text, Alert, AlertIcon, Skeleton, VStack, HStack, Button, Icon, useDisclosure,
+  ButtonGroup,
 } from '@chakra-ui/react';
+import { useState } from 'react';
 import { RiLineChartLine, RiArrowRightLine, RiMoneyDollarCircleLine } from 'react-icons/ri';
 import { Link as RouterLink } from 'react-router-dom';
 import { useSubscription } from '../hooks/useSubscription';
@@ -22,13 +24,15 @@ export function ForecastPage() {
   const { label: priceLabel } = usePrices();
   const { isOpen: isUpgradeOpen, onOpen: onUpgradeOpen, onClose: onUpgradeClose } = useDisclosure();
 
+  const [forecastMonths, setForecastMonths] = useState<3 | 6 | 12>(6);
+
   const forecast = metrics && settings
     ? calculateForecast({
         currentBalance: metrics.safeToSpend,
         income,
         expenses,
         settings,
-        months: 6,
+        months: forecastMonths,
       })
     : [];
 
@@ -106,6 +110,23 @@ export function ForecastPage() {
           <PageHeader
             title="Forecast"
             subtitle="What will your money look like if nothing changes?"
+            action={
+              <ButtonGroup size="sm" isAttached variant="outline">
+                {([3, 6, 12] as const).map(m => (
+                  <Button
+                    key={m}
+                    onClick={() => setForecastMonths(m)}
+                    bg={forecastMonths === m ? '#4C5FD5' : 'white'}
+                    color={forecastMonths === m ? 'white' : '#5a6a7a'}
+                    borderColor={forecastMonths === m ? '#4C5FD5' : '#E8E8E3'}
+                    fontWeight="600" fontSize="12px" h="32px" px={3}
+                    _hover={{ bg: forecastMonths === m ? '#3D4FBF' : '#F0EFE9' }}
+                  >
+                    {m}mo
+                  </Button>
+                ))}
+              </ButtonGroup>
+            }
           />
 
           <Box px={{ base: 4, md: 8 }} py={6}>
