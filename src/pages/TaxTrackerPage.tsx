@@ -8,7 +8,7 @@ import {
   RiSettings3Line, RiCheckLine,
 } from 'react-icons/ri';
 import { Link as RouterLink } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useFinancials } from '../hooks/useFinancials';
 import { useAuth } from '../hooks/useAuth';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -248,10 +248,11 @@ export function TaxTrackerPage() {
     return new Set();
   });
 
-  // Sync paidIds to DB whenever it changes
-  useEffect(() => {
+  // Sync paidIds to DB — debounced 600ms so rapid toggles only fire one write
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const syncPaidIds = useCallback((ids: string[]) => {
     if (!user || !settings) return;
-    const ids = [...paidIds];
     settingsApi.upsert(user.id, {
       tax_rate: settings.tax_rate,
       emergency_buffer_months: settings.emergency_buffer_months,
@@ -265,7 +266,16 @@ export function TaxTrackerPage() {
       try { localStorage.setItem(legacyKey, JSON.stringify(ids)); } catch { /* ignore */ }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paidIds]);
+  }, [user, settings, legacyKey]);
+
+  useEffect(() => {
+    const ids = [...paidIds];
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => syncPaidIds(ids), 600);
+    return () => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    };
+  }, [paidIds, syncPaidIds]);
 
   const handleTogglePaid = (id: string) => {
     setPaidIds(prev => {

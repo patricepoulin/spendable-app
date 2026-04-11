@@ -42,7 +42,8 @@ export function calculateForecast({
   settings,
   months = 6,
 }: ForecastParams): ForecastMonth[] {
-  const avgMonthlyIncome  = calcSmoothedMonthlyIncome(income, 6);
+  // Apply the expected_monthly_income floor — same logic as the dashboard Avg Income card
+  const avgMonthlyIncome  = calcSmoothedMonthlyIncome(income, 6, settings.expected_monthly_income ?? 0);
   const monthlyExpenses   = calcMonthlyExpenses(expenses);
   const monthlyTaxReserve = avgMonthlyIncome * settings.tax_rate;
   const netMonthlyChange  = avgMonthlyIncome - monthlyExpenses - monthlyTaxReserve;

@@ -2,7 +2,7 @@ import {
   Box, SimpleGrid, HStack, VStack, Text,
   Alert, AlertIcon, Progress, Skeleton, SkeletonText, Icon, useToast, Tooltip, Button, IconButton,
 } from '@chakra-ui/react';
-import { RiInformationLine, RiSignalWifiErrorLine, RiCloseLine, RiArrowRightLine } from 'react-icons/ri';
+import { RiInformationLine, RiSignalWifiErrorLine, RiCloseLine, RiArrowRightLine, RiRefreshLine } from 'react-icons/ri';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
@@ -350,6 +350,16 @@ export function DashboardPage() {
   })();
   const showStaleWarning = !loading && daysSinceLastIncome !== null && daysSinceLastIncome > 42;
 
+  // Stale balance nudge — show if settings haven't been updated in > 60 days
+  // AND the user has income (i.e. they're an active user, not a new signup).
+  // The balance drifts because expenses are estimated, not tracked to the cent.
+  const daysSinceBalanceUpdate = (() => {
+    if (!settings?.updated_at) return null;
+    const diff = Date.now() - new Date(settings.updated_at).getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  })();
+  const showBalanceNudge = !loading && income.length > 0 && daysSinceBalanceUpdate !== null && daysSinceBalanceUpdate > 60;
+
   return (
     <Box>
       <PageHeader
@@ -386,6 +396,29 @@ export function DashboardPage() {
             onClick={() => navigate('/income?add=true')}
           >
             Log income →
+          </Button>
+        </HStack>
+      )}
+
+      {showBalanceNudge && (
+        <HStack px={4} py={2.5} bg="#f8fafc" borderBottom="1px solid #e2e8f0"
+          spacing={3} justify="space-between" flexWrap="wrap">
+          <HStack spacing={2}>
+            <Icon as={RiRefreshLine} color="#8a9aaa" boxSize="14px" flexShrink={0} />
+            <Text fontSize="12px" color="#5a6a7a">
+              Your starting balance was last updated{' '}
+              <Text as="span" fontWeight="600">{daysSinceBalanceUpdate} days ago</Text>
+              {' '}— refresh it in Settings to keep your safe-to-spend accurate.
+            </Text>
+          </HStack>
+          <Button
+            size="xs" variant="outline" borderRadius="6px"
+            borderColor="#c7d0f5" color="#4C5FD5" fontWeight="600" fontSize="11px"
+            h="26px" px={3} flexShrink={0}
+            _hover={{ bg: '#eef0fb', borderColor: '#4C5FD5' }}
+            onClick={() => navigate('/settings')}
+          >
+            Update balance →
           </Button>
         </HStack>
       )}

@@ -156,11 +156,26 @@ export function ForecastPage() {
                       Assumptions
                     </Text>
                     <Text fontSize="12px" color="#5a6a7a">
-                      Using your 6-month average income of{' '}
-                      <Box as="span" fontWeight="700" color="#1C2B3A">
-                        {new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 })
-                          .format(forecast[0]?.income ?? 0)}/mo
-                      </Box>
+                      Using{' '}
+                      {settings?.expected_monthly_income && settings.expected_monthly_income > 0 &&
+                       (forecast[0]?.income ?? 0) >= settings.expected_monthly_income ? (
+                        <>
+                          your income floor of{' '}
+                          <Box as="span" fontWeight="700" color="#4C5FD5">
+                            {new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 })
+                              .format(settings.expected_monthly_income)}/mo
+                          </Box>
+                          {' '}(floor active — 6-month avg was lower)
+                        </>
+                      ) : (
+                        <>
+                          your 6-month average income of{' '}
+                          <Box as="span" fontWeight="700" color="#1C2B3A">
+                            {new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 })
+                              .format(forecast[0]?.income ?? 0)}/mo
+                          </Box>
+                        </>
+                      )}
                       , recurring expenses of{' '}
                       <Box as="span" fontWeight="700" color="#1C2B3A">
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 })
