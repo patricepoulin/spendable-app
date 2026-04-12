@@ -95,6 +95,8 @@ export function exportIncomeCsv(income: IncomeEvent[], currency = 'USD'): void {
 }
 
 // ─── Expenses export ──────────────────────────────────────────────────────────
+// Note: CSV import is income-only — this export is for reference / accountant use.
+// The 'Active' column (Yes/No) reflects whether the expense counts toward calculations.
 
 export function exportExpensesCsv(expenses: RecurringExpense[], currency = 'USD'): void {
   const headers = [

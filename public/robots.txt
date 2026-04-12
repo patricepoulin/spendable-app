@@ -1,3 +1,7 @@
-# Spendable app — behind authentication, no public content to index
+# Spendable app — authenticated content should not be indexed.
+# Terms and Privacy pages are allowed so they can be found if shared directly.
+
 User-agent: *
 Disallow: /
+Allow: /terms
+Allow: /privacy

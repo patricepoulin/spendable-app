@@ -10,6 +10,7 @@ import { TIER_CONFIG } from '../../utils/forecast';
 interface Props {
   forecast: ForecastMonth[];
   currency: string;
+  months: number;
 }
 
 function fmt(n: number, currency: string) {
@@ -72,7 +73,7 @@ function CustomTooltip({ active, payload, currency }: {
   );
 }
 
-export function ForecastChart({ forecast, currency }: Props) {
+export function ForecastChart({ forecast, currency, months }: Props) {
   const border  = '#E8E8E3';
   const surface = '#ffffff';
   const muted   = '#8a9aaa';
@@ -82,7 +83,7 @@ export function ForecastChart({ forecast, currency }: Props) {
   return (
     <Box bg={surface} border="1px solid" borderColor={border} borderRadius="14px" p={5}>
       <Text fontSize="13px" fontWeight="700" color="#1C2B3A" mb={1}>Balance Projection</Text>
-      <Text fontSize="12px" color={muted} mb={5}>Projected balance over the next 6 months</Text>
+      <Text fontSize="12px" color={muted} mb={5}>Projected balance over the next {months} months</Text>
 
       <ResponsiveContainer width="100%" height={220}>
         <AreaChart data={forecast} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>

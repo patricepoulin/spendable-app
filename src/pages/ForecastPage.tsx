@@ -212,7 +212,7 @@ export function ForecastPage() {
                 </Box>
 
                 {/* Chart */}
-                <ForecastChart forecast={forecast} currency={currency} />
+                <ForecastChart forecast={forecast} currency={currency} months={forecastMonths} />
 
                 {/* Table + Runway side by side on large screens */}
                 <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={4}>
