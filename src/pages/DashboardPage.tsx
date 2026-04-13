@@ -15,6 +15,7 @@ import { IncomeTrendChart } from '../components/dashboard/IncomeTrendChart';
 import { BalanceBreakdown } from '../components/dashboard/BalanceBreakdown';
 import { RecentIncomeList } from '../components/dashboard/RecentIncomeList';
 import { useFinancials } from '../hooks/useFinancials';
+import { useAuth } from '../hooks/useAuth';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { OnboardingEmptyState } from '../components/dashboard/OnboardingEmptyState';
 import { PAGE_BG } from '../theme';
@@ -273,6 +274,7 @@ function ConfidenceScoreCard({ score, isLoading }: { score: number; isLoading: b
 
 export function DashboardPage() {
   usePageTitle('Dashboard');
+  const { user } = useAuth();
   const { metrics, income, expenses, upcoming, settings, loading, initialLoad, error, lastUpdated, liveFailedWithCache } = useFinancials();
   const currency = settings?.currency ?? 'USD';
   const toast = useToast();
@@ -280,8 +282,8 @@ export function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const upgradedToastShown = useRef(false);
 
-  // First-run explainer — dismissed permanently in localStorage
-  const EXPLAINER_KEY = 'spendable_explainer_dismissed';
+  // First-run explainer — dismissed permanently in localStorage, scoped per user
+  const EXPLAINER_KEY = user ? `spendable_explainer_dismissed_${user.id}` : 'spendable_explainer_dismissed';
   const [showExplainer, setShowExplainer] = useState(() => {
     try { return localStorage.getItem(EXPLAINER_KEY) !== 'true'; } catch { return true; }
   });
@@ -354,9 +356,21 @@ export function DashboardPage() {
   // AND the user has income (i.e. they're an active user, not a new signup).
   // The balance drifts because expenses are estimated, not tracked to the cent.
   const daysSinceBalanceUpdate = (() => {
-    if (!settings?.updated_at) return null;
-    const diff = Date.now() - new Date(settings.updated_at).getTime();
-    return Math.floor(diff / (1000 * 60 * 60 * 24));
+    // Use a localStorage key written only when the user explicitly saves Settings.
+    // This avoids resetting the timer when tax tracker deadlines sync (which also
+    // calls settingsApi.upsert and would update settings.updated_at).
+    try {
+      const balanceKey = user ? `spendable_balance_updated_at_${user.id}` : 'spendable_balance_updated_at';
+      const raw = localStorage.getItem(balanceKey);
+      if (!raw) {
+        // Fall back to settings.updated_at for users who saved before this was added
+        if (!settings?.updated_at) return null;
+        const diff = Date.now() - new Date(settings.updated_at).getTime();
+        return Math.floor(diff / (1000 * 60 * 60 * 24));
+      }
+      const diff = Date.now() - new Date(raw).getTime();
+      return Math.floor(diff / (1000 * 60 * 60 * 24));
+    } catch { return null; }
   })();
   // Only nudge active users (6+ income entries = ~6 months of logging) so new users
   // who just set their balance on signup don't see it after 60 days of normal use.

@@ -30,8 +30,6 @@ interface UseFinancialsReturn {
   refresh: () => Promise<void>;
 }
 
-const CACHE_KEY = 'spendable_financials_cache';
-
 // Rolling window for calculations: 12 months covers tax reserve (12mo) and
 // smoothed income (6mo). The IncomePage uses its own lazy-year loader for
 // the full history view — this hook only needs the recent window.
@@ -52,27 +50,31 @@ const DEFAULT_SETTINGS: UserSettings = {
 
 // ─── Cache helpers ────────────────────────────────────────────────────────────
 
-function saveCache(data: {
+function cacheKey(userId: string): string {
+  return `spendable_financials_cache_${userId}`;
+}
+
+function saveCache(userId: string, data: {
   income: IncomeEvent[];
   expenses: RecurringExpense[];
   upcoming: UpcomingExpense[];
   settings: UserSettings;
 }) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    localStorage.setItem(cacheKey(userId), JSON.stringify(data));
   } catch {
     /* storage full — ignore */
   }
 }
 
-function loadCache(): {
+function loadCache(userId: string): {
   income: IncomeEvent[];
   expenses: RecurringExpense[];
   upcoming: UpcomingExpense[];
   settings: UserSettings;
 } | null {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(cacheKey(userId));
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -128,7 +130,7 @@ export function useFinancials(): UseFinancialsReturn {
 
       // Persist to cache for offline use (skip in mock mode — mock has its own store)
       if (!IS_MOCK) {
-        saveCache({
+        saveCache(user.id, {
           income: inc,
           expenses: exp,
           upcoming: upc,
@@ -137,7 +139,7 @@ export function useFinancials(): UseFinancialsReturn {
       }
     } catch (e) {
       // Network error — try to serve from cache
-      const cached = IS_MOCK ? null : loadCache();
+      const cached = IS_MOCK ? null : (user ? loadCache(user.id) : null);
       if (cached) {
         setIncome(cached.income);
         setExpenses(cached.expenses);
@@ -157,7 +159,7 @@ export function useFinancials(): UseFinancialsReturn {
   useEffect(() => {
     // On mount, pre-populate from cache instantly so UI isn't blank while fetching
     if (!IS_MOCK) {
-      const cached = loadCache();
+      const cached = user ? loadCache(user.id) : null;
       if (cached) {
         setIncome(cached.income);
         setExpenses(cached.expenses);

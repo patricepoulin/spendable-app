@@ -171,6 +171,9 @@ export function SettingsPage() {
       });
       toast({ title: 'Settings saved', status: 'success', duration: 2000, isClosable: true });
       setIsDirty(false);
+      // Track when the user explicitly saved settings (balance update timestamp)
+      // This is separate from settings.updated_at which is also written by tax tracker syncs.
+      try { localStorage.setItem(user ? `spendable_balance_updated_at_${user.id}` : 'spendable_balance_updated_at', new Date().toISOString()); } catch { /* ignore */ }
       await refresh();
     } catch {
       toast({ title: 'Failed to save settings', status: 'error', duration: 3000, isClosable: true });

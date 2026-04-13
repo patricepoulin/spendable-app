@@ -87,10 +87,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Clear user-scoped financials cache before sign-out so data never leaks to the next user
+    if (user?.id) {
+      try { localStorage.removeItem(`spendable_financials_cache_${user.id}`); } catch { /* ignore */ }
+    }
     await auth.signOut();
     if (IS_MOCK) sessionStorage.removeItem('spendable_mock_logged_in');
-    // Clear the financials cache so the next user (or re-login) never sees stale data
-    try { localStorage.removeItem('spendable_financials_cache'); } catch { /* ignore */ }
     setUser(null);
   };
 

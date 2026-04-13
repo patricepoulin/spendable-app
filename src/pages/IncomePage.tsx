@@ -189,6 +189,22 @@ export function IncomePage() {
   const currentMonthKey = new Date().toISOString().slice(0, 7); // "2026-04"
   const autoLogStorageKey = `spendable_autolog_skipped_${currentMonthKey}`;
 
+  // Prune stale autolog-skipped keys (older than 2 months) on mount so they
+  // don't accumulate indefinitely — one key per month forever otherwise.
+  useEffect(() => {
+    try {
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - 2);
+      const cutoffKey = cutoff.toISOString().slice(0, 7); // "2026-02"
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('spendable_autolog_skipped_'))
+        .forEach(k => {
+          const month = k.replace('spendable_autolog_skipped_', '');
+          if (month < cutoffKey) localStorage.removeItem(k);
+        });
+    } catch { /* ignore */ }
+  }, []); // run once on mount
+
   // Persist dismissal per-month in localStorage so "Skip this month" survives
   // navigation and page reloads for the rest of the calendar month.
   const [autoLogDismissed, setAutoLogDismissed] = useState(() => {
@@ -703,6 +719,13 @@ export function IncomePage() {
                                 }).format(grandTotal)}
                               </Text>
                             </HStack>
+                          </Box>
+                          {/* Currency disclaimer */}
+                          <Box bg="#fef9c3" border="1px solid #fde68a" borderRadius="10px" px={4} py={2.5}>
+                            <Text fontSize="12px" color="#92400e" fontWeight="500">
+                              All amounts shown in <Text as="span" fontWeight="700">{currency}</Text>.
+                              If you changed your currency setting after logging income, historical entries are displayed using the new symbol — the underlying amounts are unchanged.
+                            </Text>
                           </Box>
                         </VStack>
                       );
