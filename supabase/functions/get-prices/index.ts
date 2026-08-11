@@ -12,11 +12,7 @@
 
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-
-const CORS = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders } from '../_shared/cors.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2025-02-24.acacia' as any,
@@ -24,6 +20,7 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
 });
 
 serve(async (req: Request) => {
+  const CORS = corsHeaders(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   try {

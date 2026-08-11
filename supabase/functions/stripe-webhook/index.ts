@@ -16,6 +16,7 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2?target=deno';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   // Use the latest API version — matches what Stripe CLI 2026 sends
@@ -27,11 +28,6 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
-
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 // ─── Resolve userId ────────────────────────────────────────────────────────────
 // Primary:  session/subscription metadata.userId  (set by create-checkout)
@@ -79,14 +75,14 @@ async function upsertSubscription(userId: string, data: Record<string, unknown>)
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 serve(async (req: Request) => {
+  const CORS = corsHeaders(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   const sig    = req.headers.get('stripe-signature');
   const secret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
   const body   = await req.text();
 
-  // Log environment state to help debug secret issues
-  console.log('Webhook received — sig present:', !!sig, '| secret present:', !!secret, '| secret prefix:', secret?.slice(0, 12));
+  console.log('Webhook received — sig present:', !!sig, '| secret present:', !!secret);
 
   if (!secret) {
     console.error('STRIPE_WEBHOOK_SECRET is not set!');

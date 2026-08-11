@@ -172,6 +172,10 @@ create policy "Service role can manage subscriptions"
 create index if not exists idx_user_subscriptions_user
   on public.user_subscriptions(user_id);
 
+-- Cooldown timestamp for create-checkout rate limiting (see Edge Function)
+alter table public.user_subscriptions
+  add column if not exists last_checkout_attempt_at timestamptz;
+
 create index if not exists idx_user_subscriptions_customer
   on public.user_subscriptions(stripe_customer_id);
 

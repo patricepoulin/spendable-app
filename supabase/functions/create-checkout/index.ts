@@ -8,18 +8,18 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2?target=deno';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2025-02-24.acacia',
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Minimum time between checkout session creations per user
+const CHECKOUT_COOLDOWN_MS = 10_000;
 
 serve(async (req: Request) => {
+  const CORS = corsHeaders(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   try {
@@ -49,13 +49,30 @@ serve(async (req: Request) => {
     const { priceId, successUrl, cancelUrl } = await req.json();
     if (!priceId) throw new Error('Missing priceId');
 
-    // ── 4. Look up or create Stripe customer ────────────────────────────────
+    // ── 4. Rate limit: reject repeated checkout attempts within the cooldown ──
     const { data: sub } = await supabaseAdmin
       .from('user_subscriptions')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, last_checkout_attempt_at')
       .eq('user_id', userId)
       .single();
 
+    const lastAttempt = sub?.last_checkout_attempt_at
+      ? new Date(sub.last_checkout_attempt_at as string).getTime()
+      : 0;
+
+    if (Date.now() - lastAttempt < CHECKOUT_COOLDOWN_MS) {
+      return new Response(
+        JSON.stringify({ message: 'Please wait a moment before trying again.' }),
+        { status: 429, headers: { ...CORS, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    await supabaseAdmin.from('user_subscriptions').upsert(
+      { user_id: userId, last_checkout_attempt_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
+    );
+
+    // ── 5. Look up or create Stripe customer ────────────────────────────────
     let customerId = sub?.stripe_customer_id as string | undefined;
 
     if (!customerId) {
@@ -71,7 +88,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // ── 5. Create Checkout session ──────────────────────────────────────────
+    // ── 6. Create Checkout session ──────────────────────────────────────────
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
