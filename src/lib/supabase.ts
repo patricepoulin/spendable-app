@@ -93,7 +93,7 @@ export const settingsApi = {
 
   async upsert(
     userId: string,
-    settings: SettingsFormData & { starting_balance_updated_at?: string },
+    settings: Partial<SettingsFormData> & { starting_balance_updated_at?: string },
   ): Promise<UserSettings> {
     if (IS_MOCK) return mockSettingsApi.upsert(userId, settings);
     const { data, error } = await sb()

@@ -69,7 +69,6 @@ const theme = extendTheme({
   },
   semanticTokens: {
     colors: {
-      'page-bg':   { default: '#F5F4EF', _dark: '#141f2b' },
       'surface':   { default: '#FFFFFF', _dark: '#1C2B3A'  },
       'surface-2': { default: '#F0EFE9', _dark: '#253344'  },
       'border':    { default: '#E8E8E3', _dark: '#2d3e50'  },

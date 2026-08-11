@@ -10,7 +10,7 @@ interface Props {
 export function EmptyIncomeState({ border, subtext, onAdd }: Props) {
   return (
     <Tr>
-      <Td colSpan={5} borderColor={border} py={3}>
+      <Td colSpan={6} borderColor={border} py={3}>
         <HStack justify="space-between" px={1}>
           <Text fontSize="12px" color={subtext} fontStyle="italic">
             No income recorded

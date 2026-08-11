@@ -125,7 +125,7 @@ export function IncomeEntryItem({
       <Td py={3} borderColor={border}>
         <Text fontSize="12px" color={muted}>
           {new Date(event.date).toLocaleDateString('en-US', {
-            month: 'short', day: 'numeric',
+            month: 'short', day: 'numeric', year: 'numeric',
           })}
         </Text>
       </Td>

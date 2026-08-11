@@ -234,24 +234,33 @@ export function TaxTrackerPage() {
   // Initialise from DB settings with localStorage as fallback for existing users.
   const legacyKey = user ? `spendable_tax_paid_${user.id}` : null;
 
-  const [paidIds, setPaidIds] = useState<Set<string>>(() => {
-    if (settings?.paid_tax_deadline_ids?.length) {
-      return new Set(settings.paid_tax_deadline_ids);
-    }
-    if (legacyKey) {
+  const [paidIds, setPaidIds] = useState<Set<string>>(new Set());
+
+  // `settings` is null until useFinancials' async fetch resolves, so a lazy
+  // useState initializer here would always see null and fall back to
+  // localStorage/empty — permanently missing the real DB value (a lazy
+  // initializer only ever runs once, on the very first render). Instead,
+  // hydrate paidIds exactly once, the first time settings actually arrives.
+  const [hasHydratedPaidIds, setHasHydratedPaidIds] = useState(false);
+
+  useEffect(() => {
+    if (hasHydratedPaidIds || settings === null) return;
+    if (settings.paid_tax_deadline_ids?.length) {
+      setPaidIds(new Set(settings.paid_tax_deadline_ids));
+    } else if (legacyKey) {
       try {
         const raw = localStorage.getItem(legacyKey);
-        return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
-      } catch { return new Set(); }
+        if (raw) setPaidIds(new Set(JSON.parse(raw) as string[]));
+      } catch { /* ignore */ }
     }
-    return new Set();
-  });
+    setHasHydratedPaidIds(true);
+  }, [settings, hasHydratedPaidIds, legacyKey]);
 
   // Sync paidIds to DB — debounced 600ms so rapid toggles only fire one write
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const syncPaidIds = useCallback((ids: string[]) => {
-    if (!user || !settings) return;
+    if (!user) return;
     // Prune stale IDs — deadline IDs are date strings like "2026-01-31".
     // Only keep IDs from the current year or the previous year to prevent
     // orphaned entries accumulating as tax years roll over.
@@ -260,29 +269,27 @@ export function TaxTrackerPage() {
       const year = parseInt(id.slice(0, 4), 10);
       return !isNaN(year) && year >= currentYear - 1;
     });
-    settingsApi.upsert(user.id, {
-      tax_rate: settings.tax_rate,
-      emergency_buffer_months: settings.emergency_buffer_months,
-      starting_balance: settings.starting_balance,
-      currency: settings.currency,
-      tax_schedule: settings.tax_schedule ?? 'annual',
-      expected_monthly_income: settings.expected_monthly_income ?? 0,
-      paid_tax_deadline_ids: freshIds,
-    }).catch(() => { /* non-critical */ });
+    // Partial update — only touch paid_tax_deadline_ids. Sending the rest of
+    // the settings snapshot here raced with SettingsPage's own full-object
+    // save: whichever write landed last clobbered the other's fields.
+    settingsApi.upsert(user.id, { paid_tax_deadline_ids: freshIds }).catch(() => { /* non-critical */ });
     if (legacyKey) {
       try { localStorage.setItem(legacyKey, JSON.stringify(freshIds)); } catch { /* ignore */ }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, settings, legacyKey]);
+  }, [user, legacyKey]);
 
   useEffect(() => {
+    // Never sync before the initial hydration above has run — otherwise the
+    // very first render's empty paidIds could get written to the DB before
+    // the real value has had a chance to load, erasing it.
+    if (!hasHydratedPaidIds) return;
     const ids = [...paidIds];
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(() => syncPaidIds(ids), 600);
     return () => {
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     };
-  }, [paidIds, syncPaidIds]);
+  }, [paidIds, syncPaidIds, hasHydratedPaidIds]);
 
   const handleTogglePaid = (id: string) => {
     setPaidIds(prev => {

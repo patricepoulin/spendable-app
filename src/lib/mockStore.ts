@@ -321,7 +321,7 @@ export const mockSettingsApi = {
     return { ...store.settings };
   },
 
-  async upsert(_userId: string, form: SettingsFormData & { starting_balance_updated_at?: string }): Promise<UserSettings> {
+  async upsert(_userId: string, form: Partial<SettingsFormData> & { starting_balance_updated_at?: string }): Promise<UserSettings> {
     store.settings = {
       ...store.settings,
       ...form,

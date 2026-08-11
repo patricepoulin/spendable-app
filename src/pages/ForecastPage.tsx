@@ -14,6 +14,7 @@ import { RunwayCard } from '../components/forecast/RunwayCard';
 import { useFinancials } from '../hooks/useFinancials';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { calculateForecast } from '../utils/forecast';
+import { calcSmoothedMonthlyIncome } from '../utils/calculations';
 import { PAGE_BG } from '../theme';
 
 export function ForecastPage() {
@@ -35,6 +36,22 @@ export function ForecastPage() {
         months: forecastMonths,
       })
     : [];
+
+  // calculateForecast always returns `months` entries once metrics/settings
+  // are ready, so forecast.length === 0 is never actually true — the real
+  // "no data yet" signal is whether the user has entered anything at all.
+  const hasNoData = income.length === 0 && expenses.length === 0;
+
+  // The floor only actually changes anything when the real (unfloored)
+  // average is below it — calcSmoothedMonthlyIncome already floors its
+  // result when a floor is set, so comparing forecast[0].income (already
+  // floored) back against the floor is always true and says nothing.
+  const rawAvgIncome = calcSmoothedMonthlyIncome(income, 6, 0);
+  const floorActive = !!(
+    settings?.expected_monthly_income &&
+    settings.expected_monthly_income > 0 &&
+    rawAvgIncome < settings.expected_monthly_income
+  );
 
   if (error) {
     return (
@@ -138,7 +155,7 @@ export function ForecastPage() {
                   <Skeleton h="200px" borderRadius="14px" />
                 </SimpleGrid>
               </VStack>
-            ) : forecast.length === 0 ? (
+            ) : hasNoData ? (
               /* Empty state */
               <Box
                 bg="white" border="1px solid #E8E8E3" borderRadius="14px"
@@ -178,8 +195,7 @@ export function ForecastPage() {
                     </Text>
                     <Text fontSize="12px" color="#5a6a7a">
                       Using{' '}
-                      {settings?.expected_monthly_income && settings.expected_monthly_income > 0 &&
-                       (forecast[0]?.income ?? 0) >= settings.expected_monthly_income ? (
+                      {floorActive ? (
                         <>
                           your income floor of{' '}
                           <Box as="span" fontWeight="700" color="#4C5FD5">
