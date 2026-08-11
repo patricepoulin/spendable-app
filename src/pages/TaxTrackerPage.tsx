@@ -17,7 +17,6 @@ import { usePrices } from '../hooks/usePrices';
 import { UpgradeModal } from '../components/subscription/UpgradeModal';
 import { PageHeader } from '../components/ui/PageHeader';
 import { calcTaxTracker, daysUntilDeadline, getTaxYearStartIso } from '../utils/taxTracker';
-import { calcTaxReserve } from '../utils/calculations';
 import { formatCurrency } from '../utils/calculations';
 import { incomeApi, settingsApi } from '../lib/supabase';
 import type { IncomeEvent } from '../types';
@@ -203,7 +202,7 @@ function EmptyState() {
 export function TaxTrackerPage() {
   usePageTitle('Tax Tracker');
   const { user }                         = useAuth();
-  const { settings, loading: finLoading } = useFinancials();
+  const { settings, metrics, loading: finLoading } = useFinancials();
   const { isPro, loading: subLoading }   = useSubscription();
   const { label: priceLabel }            = usePrices();
   const { isOpen: isUpgradeOpen, onOpen: onUpgradeOpen, onClose: onUpgradeClose } = useDisclosure();
@@ -293,8 +292,15 @@ export function TaxTrackerPage() {
     });
   };
 
-  // reserved = tax_rate × tax-year income (matches the YTD bill calculation exactly)
-  const reserved = calcTaxReserve(taxYearIncome, taxRate);
+  // "Reserved" = how much of this year's estimated bill your current balance
+  // could actually cover if you paid it today. Previously this was computed
+  // as tax_rate × tax-year income — identical to the estimated bill itself,
+  // making the pot always show ~100% funded regardless of whether that money
+  // had actually been spent on anything else. Capping by currentBalance ties
+  // it to money that's actually still there.
+  const ytdIncomeTotal    = taxYearIncome.reduce((sum, e) => sum + e.amount, 0);
+  const estimatedBillPreview = ytdIncomeTotal * taxRate;
+  const reserved = Math.max(0, Math.min(estimatedBillPreview, metrics?.currentBalance ?? 0));
 
   const data = calcTaxTracker(taxYearIncome, taxRate, taxSchedule, currency, reserved);
 
@@ -407,7 +413,7 @@ export function TaxTrackerPage() {
                   <StatTile
                     label="Reserved So Far"
                     value={formatCurrency(reserved, currency)}
-                    sub={`${Math.round(taxRate * 100)}% of tax-year income`}
+                    sub="What your current balance could cover"
                     icon={RiCheckboxCircleLine}
                     color={C.green}
                   />

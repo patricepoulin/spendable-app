@@ -8,15 +8,16 @@ create extension if not exists "uuid-ossp";
 
 -- ─── user_settings ───────────────────────────────────────────
 create table if not exists public.user_settings (
-  id                     uuid primary key default uuid_generate_v4(),
-  user_id                uuid not null references auth.users(id) on delete cascade,
-  tax_rate               numeric(5,4) not null default 0.25,   -- e.g. 0.25 = 25%
-  emergency_buffer_months integer not null default 3,
-  starting_balance       numeric(12,2) not null default 0,
-  currency               text not null default 'USD',
-  tax_schedule           text not null default 'annual'
-                         check (tax_schedule in ('annual', 'quarterly')),
-  updated_at             timestamptz not null default now(),
+  id                        uuid primary key default uuid_generate_v4(),
+  user_id                   uuid not null references auth.users(id) on delete cascade,
+  tax_rate                  numeric(5,4) not null default 0.25,   -- e.g. 0.25 = 25%
+  emergency_buffer_months   integer not null default 3,
+  starting_balance          numeric(12,2) not null default 0,
+  starting_balance_updated_at timestamptz not null default now(), -- when starting_balance was last re-anchored; used to accrue expenses since then, not since the last income entry
+  currency                  text not null default 'USD',
+  tax_schedule              text not null default 'annual'
+                            check (tax_schedule in ('annual', 'quarterly')),
+  updated_at                timestamptz not null default now(),
   unique(user_id)
 );
 
@@ -203,3 +204,14 @@ alter table public.user_settings
 
 alter table public.user_settings
   add column if not exists paid_tax_deadline_ids text[] not null default '{}';
+
+-- ============================================================
+-- Migration: Starting Balance Anchor (run on existing databases)
+-- Safe to run multiple times — uses IF NOT EXISTS
+-- Tracks when starting_balance was last re-anchored, so currentBalance can
+-- accrue expenses since that anchor point instead of since the last income
+-- entry (which understated elapsed time for anyone with regular income).
+-- ============================================================
+
+alter table public.user_settings
+  add column if not exists starting_balance_updated_at timestamptz not null default now();

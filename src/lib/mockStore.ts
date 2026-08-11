@@ -52,6 +52,7 @@ const SEED_SETTINGS: UserSettings = {
   tax_rate: 0.25,
   emergency_buffer_months: 3,
   starting_balance: 18500,
+  starting_balance_updated_at: new Date().toISOString(),
   currency: 'USD',
   tax_schedule: 'annual',
   expected_monthly_income: 0,
@@ -320,7 +321,7 @@ export const mockSettingsApi = {
     return { ...store.settings };
   },
 
-  async upsert(_userId: string, form: SettingsFormData): Promise<UserSettings> {
+  async upsert(_userId: string, form: SettingsFormData & { starting_balance_updated_at?: string }): Promise<UserSettings> {
     store.settings = {
       ...store.settings,
       ...form,

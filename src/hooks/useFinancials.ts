@@ -7,7 +7,7 @@ import {
   settingsApi,
   IS_MOCK,
 } from '../lib/supabase';
-import { calcFinancialMetrics } from '../utils/calculations';
+import { calcFinancialMetrics, calcMonthlyExpenses } from '../utils/calculations';
 import type {
   IncomeEvent,
   RecurringExpense,
@@ -41,6 +41,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   tax_rate: 0.25,
   emergency_buffer_months: 3,
   starting_balance: 0,
+  starting_balance_updated_at: new Date().toISOString(),
   currency: 'USD',
   tax_schedule: 'annual',
   expected_monthly_income: 0,
@@ -174,31 +175,23 @@ export function useFinancials(): UseFinancialsReturn {
 
   const resolvedSettings = settings ?? DEFAULT_SETTINGS;
 
+  // Expenses accrue from the moment starting_balance was last re-anchored,
+  // not from the date of the most recent income entry — using "last income"
+  // as the clock understated elapsed time (and so overstated the balance)
+  // for anyone with roughly regular income, since a payment last week reset
+  // the clock to ~0 regardless of how long it had actually been since the
+  // balance was last anchored to reality.
   const currentBalance = (() => {
     const totalIncome = income.reduce((sum, e) => sum + e.amount, 0);
-    const monthlyExpTotal = expenses
-      .filter((e) => e.is_active)
-      .reduce((sum, e) => {
-        if (e.frequency === 'monthly') return sum + e.amount;
-        if (e.frequency === 'weekly') return sum + e.amount * 4;
-        if (e.frequency === 'quarterly') return sum + e.amount / 3;
-        if (e.frequency === 'annually') return sum + e.amount / 12;
-        return sum;
-      }, 0);
+    const monthlyExpTotal = calcMonthlyExpenses(expenses);
     const now = new Date();
-    const months =
-      income.length > 0
-        ? Math.max(
-            1,
-            Math.ceil(
-              (now.getTime() -
-                new Date(income[income.length - 1]?.date ?? now).getTime()) /
-                (30 * 24 * 3600 * 1000),
-            ),
-          )
-        : 1;
+    const anchor = new Date(resolvedSettings.starting_balance_updated_at);
+    const monthsSinceAnchor = Math.max(
+      0,
+      (now.getTime() - anchor.getTime()) / (30 * 24 * 3600 * 1000),
+    );
     return (
-      resolvedSettings.starting_balance + totalIncome - monthlyExpTotal * months
+      resolvedSettings.starting_balance + totalIncome - monthlyExpTotal * monthsSinceAnchor
     );
   })();
 

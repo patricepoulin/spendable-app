@@ -160,6 +160,7 @@ export function SettingsPage() {
     if (!user) return;
     setSaving(true);
     try {
+      const balanceChanged = settings != null && form.starting_balance !== settings.starting_balance;
       await settingsApi.upsert(user.id, {
         tax_rate: form.tax_rate / 100,
         emergency_buffer_months: form.emergency_buffer_months,
@@ -168,12 +169,13 @@ export function SettingsPage() {
         tax_schedule: form.tax_schedule,
         expected_monthly_income: form.expected_monthly_income,
         paid_tax_deadline_ids: form.paid_tax_deadline_ids,
+        // Only re-anchor when the balance itself actually changed — this
+        // timestamp is what currentBalance uses to accrue expenses since,
+        // so bumping it on unrelated settings changes would reset that clock.
+        ...(balanceChanged ? { starting_balance_updated_at: new Date().toISOString() } : {}),
       });
       toast({ title: 'Settings saved', status: 'success', duration: 2000, isClosable: true });
       setIsDirty(false);
-      // Track when the user explicitly saved settings (balance update timestamp)
-      // This is separate from settings.updated_at which is also written by tax tracker syncs.
-      try { localStorage.setItem(user ? `spendable_balance_updated_at_${user.id}` : 'spendable_balance_updated_at', new Date().toISOString()); } catch { /* ignore */ }
       await refresh();
     } catch {
       toast({ title: 'Failed to save settings', status: 'error', duration: 3000, isClosable: true });

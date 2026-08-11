@@ -12,6 +12,7 @@ export interface UserSettings {
   tax_rate: number;              // e.g. 0.25 for 25%
   emergency_buffer_months: number; // e.g. 3
   starting_balance: number;
+  starting_balance_updated_at: string; // when starting_balance was last re-anchored
   currency: string;              // e.g. "USD"
   tax_schedule: 'annual' | 'quarterly'; // payment cadence for tax tracker
   expected_monthly_income: number; // optional retainer / floor income, 0 = not set

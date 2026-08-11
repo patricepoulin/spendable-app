@@ -51,6 +51,15 @@ export function groupIncomeByMonth(events: IncomeEvent[]): MonthlyIncomeSummary[
 /**
  * Calculates smoothed average monthly income over the last N months.
  * Uses a rolling 6-month window by default.
+ *
+ * Walks back calendar month by calendar month (not just months that happen
+ * to have an income event) so a $0 gap month within the user's history is
+ * correctly counted as $0 rather than skipped — skipping it would inflate
+ * the average for sporadic earners. The walk stops at the user's earliest
+ * recorded income month rather than always dividing by windowMonths — that
+ * previous behaviour understated the average for anyone with less history
+ * than the window (e.g. a new user's first month of income divided by 6).
+ *
  * If expectedMonthlyIncome > 0, it acts as a floor — the result is never
  * lower than that value (useful for freelancers with a fixed retainer).
  */
@@ -60,10 +69,24 @@ export function calcSmoothedMonthlyIncome(
   expectedMonthlyIncome = 0
 ): number {
   const monthly = groupIncomeByMonth(events);
-  const recent = monthly.slice(-windowMonths);
-  if (recent.length === 0) return Math.max(0, expectedMonthlyIncome);
-  const total = recent.reduce((sum, m) => sum + m.total, 0);
-  const smoothed = total / windowMonths; // divide by window (not actual months) for smoothing
+  if (monthly.length === 0) return Math.max(0, expectedMonthlyIncome);
+
+  const totalsByMonth = new Map(monthly.map(m => [m.month, m.total]));
+  const earliestMonth = monthly[0].month; // groupIncomeByMonth sorts ascending
+  const now = new Date();
+
+  let sum = 0;
+  let count = 0;
+  for (let i = 0; i < windowMonths; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (key < earliestMonth) break; // don't assume income existed before the user's first entry
+    sum += totalsByMonth.get(key) ?? 0;
+    count += 1;
+  }
+
+  if (count === 0) return Math.max(0, expectedMonthlyIncome);
+  const smoothed = sum / count;
   return expectedMonthlyIncome > 0 ? Math.max(smoothed, expectedMonthlyIncome) : smoothed;
 }
 
