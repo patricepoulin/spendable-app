@@ -9,12 +9,32 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2?target=deno';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2025-02-24.acacia',
   httpClient: Stripe.createFetchHttpClient(),
 });
+
+// CORS: only these origins get the Access-Control-Allow-Origin echoed back.
+// Anything else falls back to DEFAULT_ORIGIN, which won't match an untrusted
+// caller's actual Origin, so the browser still blocks the response.
+const ALLOWED_ORIGINS = new Set([
+  'https://app.spendable.finance',
+  'https://spendable.finance',
+  'http://localhost:5173',
+  'http://localhost:4173',
+]);
+const DEFAULT_ORIGIN = 'https://app.spendable.finance';
+
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('origin');
+  const allowOrigin = origin && ALLOWED_ORIGINS.has(origin) ? origin : DEFAULT_ORIGIN;
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin',
+  };
+}
 
 serve(async (req: Request) => {
   const CORS = corsHeaders(req);
