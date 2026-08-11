@@ -215,3 +215,78 @@ alter table public.user_settings
 
 alter table public.user_settings
   add column if not exists starting_balance_updated_at timestamptz not null default now();
+
+-- ============================================================
+-- Migration: Server-Side Free Plan Limit Enforcement
+-- Safe to run multiple times — uses CREATE OR REPLACE / DROP+CREATE
+--
+-- Free plan limits (FREE_INCOME_LIMIT / FREE_EXPENSE_LIMIT /
+-- FREE_UPCOMING_LIMIT in src/services/stripe.ts) were previously enforced
+-- only in the React client — RLS policies above only check row ownership,
+-- not row count, so any authenticated user could call the Supabase client
+-- directly (e.g. from devtools) and insert unlimited rows on the Free plan.
+-- These triggers make the limit a real server-side boundary. They fire
+-- AFTER INSERT FOR EACH STATEMENT, so a single-row insert or a bulk CSV
+-- import are both checked as one unit — if a batch would push the user over
+-- the limit, the whole statement (and transaction) is rolled back atomically.
+-- ============================================================
+
+create or replace function public.is_pro_user(p_user_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.user_subscriptions
+    where user_id = p_user_id
+      and subscription_plan = 'pro'
+      and subscription_status in ('active', 'trialing')
+  );
+$$;
+
+create or replace function public.enforce_free_plan_row_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_limit integer := TG_ARGV[0]::integer;
+  v_count integer;
+begin
+  if public.is_pro_user(auth.uid()) then
+    return null;
+  end if;
+
+  execute format('select count(*) from public.%I where user_id = $1', TG_TABLE_NAME)
+    into v_count
+    using auth.uid();
+
+  if v_count > v_limit then
+    raise exception
+      'Free plan limit of % reached for %. Upgrade to Pro for unlimited entries.',
+      v_limit, TG_TABLE_NAME;
+  end if;
+
+  return null;
+end;
+$$;
+
+drop trigger if exists enforce_income_limit on public.income_events;
+create trigger enforce_income_limit
+  after insert on public.income_events
+  for each statement
+  execute function public.enforce_free_plan_row_limit(5);
+
+drop trigger if exists enforce_expense_limit on public.recurring_expenses;
+create trigger enforce_expense_limit
+  after insert on public.recurring_expenses
+  for each statement
+  execute function public.enforce_free_plan_row_limit(3);
+
+drop trigger if exists enforce_upcoming_limit on public.upcoming_expenses;
+create trigger enforce_upcoming_limit
+  after insert on public.upcoming_expenses
+  for each statement
+  execute function public.enforce_free_plan_row_limit(3);

@@ -71,7 +71,7 @@ export function UpcomingPage() {
   const theadBg  = '#f8fafc';
   const rowHover = '#f8fafc';
   const muted    = '#64748b';
-  const subtext  = '#94a3b8';
+  const subtext  = '#5a6a7a'; // was #94a3b8 (~2.6:1 on white, fails WCAG AA)
 
   const paid        = upcoming.filter(e => e.is_paid);
   const totalUnpaid = unpaid.reduce((s, e) => s + e.amount, 0);
@@ -91,6 +91,10 @@ export function UpcomingPage() {
 
   const handleSubmit = async () => {
     if (!user || !form.name || !form.amount || !form.due_date) return;
+    if (parseFloat(form.amount) <= 0) {
+      toast({ title: 'Amount must be greater than zero', status: 'error', duration: 3000, isClosable: true });
+      return;
+    }
     setSubmitting(true);
     try {
       if (editingId) {
@@ -497,13 +501,14 @@ export function UpcomingPage() {
                       value={form.name}
                       onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                       borderRadius="10px" h="42px" fontSize="14px"
+                      maxLength={200}
                     />
                   </FormControl>
                   <HStack spacing={3} w="full">
                     <FormControl isRequired>
                       <FormLabel fontSize="12px" fontWeight="600" color={muted} mb={1}>Amount</FormLabel>
                       <Input
-                        type="number" placeholder="0.00"
+                        type="number" placeholder="0.00" min="0.01" step="0.01"
                         value={form.amount}
                         onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
                         borderRadius="10px" h="42px" fontSize="14px"

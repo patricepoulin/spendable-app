@@ -37,14 +37,17 @@ const colors = {
   surface2: '#F0EFE9',
   text:     '#1C2B3A',
   muted:    '#5a6a7a',
-  subtle:   '#8a9aaa',
+  // '#8a9aaa' measured ~2.9:1 against white — fails WCAG AA (4.5:1) for
+  // normal text. '#5a6a7a' is the same muted gray already used elsewhere
+  // in the app (Settings, Tax Tracker) and passes at ~5.6:1.
+  subtle:   '#5a6a7a',
 };
 
 const RUNWAY_HEX: Record<string, string> = {
   green:  '#27AE60',
   yellow: '#D4A800',
   red:    '#EB5757',
-  gray:   '#8a9aaa',
+  gray:   '#5a6a7a',
 };
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
@@ -397,7 +400,7 @@ export function DashboardPage() {
         <HStack px={4} py={2.5} bg="#f8fafc" borderBottom="1px solid #e2e8f0"
           spacing={3} justify="space-between" flexWrap="wrap">
           <HStack spacing={2}>
-            <Icon as={RiTimeLine} color="#8a9aaa" boxSize="14px" flexShrink={0} />
+            <Icon as={RiTimeLine} color="#5a6a7a" boxSize="14px" flexShrink={0} />
             <Text fontSize="12px" color="#5a6a7a">
               Last income recorded{' '}
               <Text as="span" fontWeight="600">{daysSinceLastIncome} days ago</Text>
@@ -420,7 +423,7 @@ export function DashboardPage() {
         <HStack px={4} py={2.5} bg="#f8fafc" borderBottom="1px solid #e2e8f0"
           spacing={3} justify="space-between" flexWrap="wrap">
           <HStack spacing={2}>
-            <Icon as={RiRefreshLine} color="#8a9aaa" boxSize="14px" flexShrink={0} />
+            <Icon as={RiRefreshLine} color="#5a6a7a" boxSize="14px" flexShrink={0} />
             <Text fontSize="12px" color="#5a6a7a">
               Your starting balance was last updated{' '}
               <Text as="span" fontWeight="600">{daysSinceBalanceUpdate} days ago</Text>
@@ -503,7 +506,7 @@ export function DashboardPage() {
                     Review your settings
                   </Button>
                   <Button
-                    size="xs" variant="ghost" color="#8a9aaa" borderRadius="6px"
+                    size="xs" variant="ghost" color="#5a6a7a" borderRadius="6px"
                     fontWeight="600" fontSize="11px" h="26px" px={2}
                     _hover={{ color: '#5a6a7a' }}
                     onClick={dismissExplainer}
@@ -514,7 +517,7 @@ export function DashboardPage() {
               </Box>
               <IconButton
                 aria-label="Dismiss" icon={<Icon as={RiCloseLine} boxSize="14px" />}
-                size="xs" variant="ghost" color="#8a9aaa" borderRadius="6px"
+                size="xs" variant="ghost" color="#5a6a7a" borderRadius="6px"
                 _hover={{ color: '#5a6a7a', bg: '#f8fafc' }}
                 onClick={dismissExplainer}
                 flexShrink={0}

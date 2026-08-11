@@ -69,7 +69,18 @@ export function IncomePage() {
     loadYear, refresh, initialLoading,
   } = useIncomeByYear();
 
-  const { isPro, isAtIncomeLimit, canExportCsv } = useSubscription(allLoadedIncome);
+  // isAtIncomeLimit must be based on the real all-time DB count, not just
+  // allLoadedIncome — that only reflects years the user has expanded, and
+  // can under-count for anyone with entries split across multiple years.
+  const [dbIncomeCount, setDbIncomeCount] = useState(0);
+  useEffect(() => {
+    if (!user || IS_MOCK) return;
+    incomeApi.count(user.id).then(setDbIncomeCount).catch(() => {});
+  }, [user, allLoadedIncome.length]);
+
+  const { isPro, isAtIncomeLimit, canExportCsv } = useSubscription(
+    allLoadedIncome, 0, 0, IS_MOCK ? allLoadedIncome.length : dbIncomeCount,
+  );
   const { isOpen: isUpgradeOpen, onOpen: onUpgradeOpen, onClose: onUpgradeClose } = useDisclosure();
   const { isOpen: isCsvOpen, onOpen: onCsvOpen, onClose: onCsvClose } = useDisclosure();
 
@@ -290,6 +301,10 @@ export function IncomePage() {
 
   const handleSubmit = async () => {
     if (!user || !form.amount || !form.date || !form.source) return;
+    if (parseFloat(form.amount) <= 0) {
+      toast({ title: 'Amount must be greater than zero', status: 'error', duration: 3000, isClosable: true });
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = {
@@ -810,7 +825,7 @@ export function IncomePage() {
               <FormControl isRequired>
                 <FormLabel fontSize="12px" fontWeight="600" color={muted} mb={1}>Amount</FormLabel>
                 <Input
-                  type="number" placeholder="0.00"
+                  type="number" placeholder="0.00" min="0.01" step="0.01"
                   value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
                   borderRadius="10px" h="42px" fontSize="14px"
                 />
@@ -839,6 +854,7 @@ export function IncomePage() {
                   placeholder="Client, project, or invoice details..."
                   value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   borderRadius="10px" resize="none" rows={2} fontSize="14px"
+                  maxLength={500}
                 />
               </FormControl>
             </VStack>

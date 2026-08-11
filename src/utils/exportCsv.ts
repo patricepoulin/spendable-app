@@ -19,10 +19,15 @@ import { toMonthlyAmount, formatCurrency, groupIncomeByMonth } from './calculati
  * Escapes a single cell value for CSV:
  * - wraps in quotes if it contains commas, quotes, or newlines
  * - doubles any existing quote characters
+ * - prefixes a leading =, +, -, or @ with a single quote so spreadsheet
+ *   apps (Excel, Sheets) treat it as text rather than executing it as a
+ *   formula — user-entered source/notes/name fields are free text and could
+ *   otherwise smuggle a formula into an exported file (CSV injection).
  */
 function escapeCell(value: string | number | boolean | null | undefined): string {
   if (value === null || value === undefined) return '';
-  const str = String(value);
+  let str = String(value);
+  if (/^[=+\-@]/.test(str)) str = `'${str}`;
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
     return `"${str.replace(/"/g, '""')}"`;
   }
@@ -209,7 +214,7 @@ export function exportFullSnapshotCsv(params: {
     .slice()
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .forEach(e => {
-      lines.push(`"${e.date}","${e.source}",${e.amount},"${currency}","${(e.notes ?? '').replace(/"/g, '""')}"`);
+      lines.push(`"${e.date}",${escapeCell(e.source)},${e.amount},"${currency}",${escapeCell(e.notes ?? '')}`);
     });
   const totalIncome = income.reduce((s, e) => s + e.amount, 0);
   lines.push(`"TOTAL","",${totalIncome},"${currency}",""`);
@@ -234,7 +239,7 @@ export function exportFullSnapshotCsv(params: {
     .sort((a, b) => a.name.localeCompare(b.name))
     .forEach(e => {
       const monthly = toMonthlyAmount(e.amount, e.frequency).toFixed(2);
-      lines.push(`"${e.name}","${e.category}",${e.amount},"${e.frequency}",${monthly},"${currency}","${e.is_active ? 'Yes' : 'No'}"`);
+      lines.push(`${escapeCell(e.name)},"${e.category}",${e.amount},"${e.frequency}",${monthly},"${currency}","${e.is_active ? 'Yes' : 'No'}"`);
     });
   const activeMonthly = expenses
     .filter(e => e.is_active)
@@ -250,7 +255,7 @@ export function exportFullSnapshotCsv(params: {
       .slice()
       .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
       .forEach(u => {
-        lines.push(`"${u.name}","${u.due_date}",${u.amount},"${currency}","${u.is_paid ? 'Yes' : 'No'}"`);
+        lines.push(`${escapeCell(u.name)},"${u.due_date}",${u.amount},"${currency}","${u.is_paid ? 'Yes' : 'No'}"`);
       });
     lines.push('');
   }

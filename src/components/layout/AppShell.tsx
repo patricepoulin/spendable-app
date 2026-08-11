@@ -120,7 +120,8 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             <IconButton
               aria-label="Sign out"
               icon={<Icon as={RiLogoutBoxLine} boxSize="14px" />}
-              size="xs" variant="ghost"
+              size="sm" variant="ghost"
+              minW="44px" minH="44px"
               color={S.mutedText}
               _hover={{ color: S.signoutHover, bg: 'transparent' }}
               onClick={() => signOut()}

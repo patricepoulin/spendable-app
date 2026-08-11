@@ -1,5 +1,9 @@
 import Papa from 'papaparse';
-import * as XLSX from 'xlsx';
+// @e965/xlsx republishes SheetJS's own CDN releases to npm — the "xlsx"
+// package on the npm registry is stuck at 0.18.5 forever (SheetJS moved
+// fixes for known prototype-pollution/ReDoS issues to their own CDN only,
+// which isn't reliably fetchable via yarn/npm's HTTP client).
+import * as XLSX from '@e965/xlsx';
 import type {
   CsvRawRow, CsvParsedRow, ColumnMapping, CsvImportField,
 } from '../types/csvImport';

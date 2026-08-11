@@ -41,7 +41,9 @@ export class ErrorBoundary extends Component<Props, State> {
           <Text fontSize="14px" color="#5a6a7a" lineHeight="1.65" mb={5}>
             An unexpected error occurred. Your data is safe — try refreshing the page.
           </Text>
-          {this.state.error && (
+          {/* Raw error detail could leak internal implementation info to
+              end users — only show it in local dev, never in production. */}
+          {import.meta.env.DEV && this.state.error && (
             <Code
               display="block" p={3} mb={5} borderRadius="8px"
               fontSize="11px" color="#5a6a7a" bg="#f8fafc"
