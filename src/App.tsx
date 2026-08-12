@@ -111,7 +111,7 @@ const theme = extendTheme({
         color: '#1C2B3A',
         fontSize: '14px',
         lineHeight: '1.6',
-        '-webkit-font-smoothing': 'antialiased',
+        WebkitFontSmoothing: 'antialiased',
       },
     },
   },
