@@ -8,6 +8,7 @@ import {
   RiUploadLine, RiFileLine, RiDownloadLine, RiCheckLine,
   RiErrorWarningLine, RiInformationLine, RiAlertLine,
 } from 'react-icons/ri';
+import { usePostHog } from '@posthog/react';
 import { useAuth } from '../../hooks/useAuth';
 import { incomeApi, IS_MOCK } from '../../lib/supabase';
 import { FREE_INCOME_LIMIT } from '../../services/stripe';
@@ -410,6 +411,7 @@ export function CsvImportModal({
   isOpen, onClose, onImportComplete, isPro, onUpgradeNeeded,
 }: CsvImportModalProps) {
   const { user }  = useAuth();
+  const posthog   = usePostHog();
   const toast     = useToast();
 
   // ── State ────────────────────────────────────────────────────────────────
@@ -497,6 +499,8 @@ export function CsvImportModal({
     setStep('importing');
     setImportProgress(0);
 
+    const isFirstEver = existingCount === 0;
+
     try {
       const BATCH = 50;
       let inserted = 0;
@@ -514,6 +518,8 @@ export function CsvImportModal({
         inserted += n;
         setImportProgress(Math.round((inserted / toImport.length) * 100));
       }
+
+      if (isFirstEver && inserted > 0) posthog?.capture('first_income_logged', { source: 'csv_import' });
 
       toast({
         title: `${inserted} income ${inserted === 1 ? 'entry' : 'entries'} imported`,

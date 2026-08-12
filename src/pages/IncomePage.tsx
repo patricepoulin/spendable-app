@@ -13,6 +13,7 @@ import {
   Menu, MenuButton, MenuList, MenuItem, MenuDivider,
 } from '@chakra-ui/react';
 import { RiAddLine, RiDownload2Line, RiArrowDownSLine, RiUpload2Line, RiDeleteBin2Line, RiCheckboxLine, RiCloseLine, RiPieChartLine, RiMoreLine } from 'react-icons/ri';
+import { usePostHog } from '@posthog/react';
 import { CsvImportModal } from '../components/income/CsvImportModal';
 import { UpgradeModal } from '../components/subscription/UpgradeModal';
 import { useSubscription } from '../hooks/useSubscription';
@@ -49,6 +50,7 @@ export function IncomePage() {
   const { settings }              = useFinancials();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast    = useToast();
+  const posthog  = usePostHog();
   const currency = settings?.currency ?? 'USD';
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -317,7 +319,9 @@ export function IncomePage() {
         await incomeApi.update(editing.id, payload);
         toast({ title: 'Income updated', status: 'success', duration: 2000, isClosable: true });
       } else {
+        const isFirstEver = dbIncomeCount === 0;
         await incomeApi.create(user.id, payload);
+        if (isFirstEver) posthog?.capture('first_income_logged', { source: 'manual' });
         toast({ title: 'Income added', status: 'success', duration: 2000, isClosable: true });
       }
       handleClose();

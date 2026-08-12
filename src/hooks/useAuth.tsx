@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
+import { usePostHog } from '@posthog/react';
 import { IS_MOCK, supabase, auth, subscriptionApi } from '../lib/supabase';
 
 // ─── Mock user (mirrors Supabase User shape) ──────────────────────────────────
@@ -31,6 +32,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]       = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const posthog = usePostHog();
 
   useEffect(() => {
     if (IS_MOCK) {
@@ -73,13 +75,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string) => {
     const { error, data } = await auth.signUp(email, password) as { error: Error | null; data: { user?: { id: string; identities?: unknown[] | null } | null } };
     if (error) throw error;
+    // Supabase returns a user object with an empty identities array when the
+    // email already belongs to a confirmed account — not a genuinely new signup.
+    const isNewAccount = data?.user?.identities === undefined || (data?.user?.identities?.length ?? 0) > 0;
     if (IS_MOCK) {
       sessionStorage.setItem('spendable_mock_logged_in', 'true');
       setUser({ ...MOCK_USER, email });
+      if (isNewAccount) posthog?.capture('signup_completed');
     } else if (data?.user?.id) {
       // Create the free-plan subscription row immediately so all limit
       // checks and webhook upserts have a row to work with from day one.
       await subscriptionApi.upsertFree(data.user.id).catch(() => {});
+      if (isNewAccount) posthog?.capture('signup_completed');
     }
     // Return identities so AuthPage can detect duplicate confirmed accounts.
     // Supabase returns an empty identities array when the email is already registered.
