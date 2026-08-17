@@ -57,6 +57,7 @@ const SEED_SETTINGS: UserSettings = {
   tax_schedule: 'annual',
   expected_monthly_income: 0,
   paid_tax_deadline_ids: [],
+  email_digest_enabled: true,
   updated_at: new Date().toISOString(),
 };
 

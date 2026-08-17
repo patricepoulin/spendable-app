@@ -12,3 +12,9 @@ verify_jwt = false
 
 [functions.get-prices]
 verify_jwt = false
+
+[functions.weekly-digest]
+verify_jwt = false
+
+[functions.unsubscribe-digest]
+verify_jwt = false

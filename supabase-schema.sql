@@ -290,3 +290,27 @@ create trigger enforce_upcoming_limit
   after insert on public.upcoming_expenses
   for each statement
   execute function public.enforce_free_plan_row_limit(3);
+
+-- ============================================================
+-- Migration: Weekly Digest Email
+-- Safe to run multiple times — uses IF NOT EXISTS
+--
+-- email_digest_enabled: per-user opt-out, defaults to on.
+-- user_digest_state: one row per user, holds the safe-to-spend value from
+-- the last digest sent, so the next digest can show a week-over-week delta.
+-- Only ever read/written by the weekly-digest Edge Function (service role),
+-- so RLS is enabled with no policies — same "deny by default to clients"
+-- pattern as everything else that's service-role-only in this schema.
+-- ============================================================
+
+alter table public.user_settings
+  add column if not exists email_digest_enabled boolean not null default true;
+
+create table if not exists public.user_digest_state (
+  user_id           uuid primary key references auth.users(id) on delete cascade,
+  last_sent_at      timestamptz,
+  last_safe_to_spend numeric(12,2),
+  updated_at        timestamptz not null default now()
+);
+
+alter table public.user_digest_state enable row level security;

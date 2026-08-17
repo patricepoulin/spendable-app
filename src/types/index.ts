@@ -17,6 +17,7 @@ export interface UserSettings {
   tax_schedule: 'annual' | 'quarterly'; // payment cadence for tax tracker
   expected_monthly_income: number; // optional retainer / floor income, 0 = not set
   paid_tax_deadline_ids: string[]; // deadline IDs marked as paid in Tax Tracker
+  email_digest_enabled: boolean;   // weekly safe-to-spend email, defaults on
   updated_at: string;
 }
 

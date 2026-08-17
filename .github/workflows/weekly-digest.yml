@@ -1,0 +1,25 @@
+name: Weekly digest email
+
+on:
+  schedule:
+    # 8:00 UTC every Monday
+    - cron: '0 8 * * 1'
+  workflow_dispatch: {} # allows manually triggering a run from the Actions tab, for testing
+
+jobs:
+  trigger-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call weekly-digest Edge Function
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://wrzvsnejifvhjtyaupyj.supabase.co/functions/v1/weekly-digest" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "Response: $body"
+          if [ "$status" -ge 300 ]; then
+            echo "weekly-digest returned HTTP $status"
+            exit 1
+          fi
